@@ -1,109 +1,55 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# My Web App
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+A web app built with Next.js and Supabase, deployed on Vercel.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+**Live site:** [nextjs-with-supabase-lac-tau.vercel.app](https://nextjs-with-supabase-lac-tau.vercel.app)
 
-## Features
+## Where does your code live?
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+The code lives in this GitHub repository, [Vchor-0232/nextjs-with-supabase](https://github.com/Vchor-0232/nextjs-with-supabase). It's a Next.js app written in TypeScript and styled with Tailwind CSS. The pages are in the `app` folder, the reusable pieces (like the sign-up and login forms) are in `components`, and the code that connects to Supabase is in `lib/supabase`. GitHub is the single source of truth: Claude Code works on a copy of this repo, and Vercel builds the live site from it.
 
-## Demo
+## Where does your data live, and what is stored there right now?
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+The data lives in a Supabase project, which gives the app a Postgres database and a ready-made login system. Right now the only data stored is user accounts. When someone signs up on the site, Supabase saves their email, an encrypted version of their password, and when they signed up and last logged in, under Authentication > Users. The app doesn't have any tables of its own yet, so there's no other data stored.
 
-## Deploy to Vercel
+## How does a change get from Claude Code to the live site?
 
-Vercel deployment will guide you through creating a Supabase account and project.
+1. I tell Claude Code what I want changed, for example "make the main color blue."
+2. Claude Code copies (clones) this repo from GitHub and edits the files on a new branch.
+3. Claude Code saves the change as a commit and pushes the branch up to GitHub.
+4. Claude Code opens a pull request, so I can see exactly what changed before it goes anywhere.
+5. I review the pull request and merge it into the `main` branch.
+6. Vercel sees the new commit on `main`, builds the app, and deploys it.
+7. When Vercel shows the deployment as Ready, the change is live on the site.
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+## What will you need to add to turn this into your team's app?
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+Our app helps Roblox game developers get their games seen. The starter already handles signing up, logging in, logging out, and resetting a password, so accounts are done. Every feature below needs at least one new table in Supabase, with row level security turned on so users can only change their own data, plus new pages in Next.js. All of them depend on a `games` table that stores each game's title, description, thumbnail, Roblox link, and the developer who posted it, and a form where developers submit their games. Thumbnails will be uploaded to Supabase Storage.
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+1. **Game spotlight (top priority).** Both game developers we interviewed said getting views is their main worry about uploading to Roblox, so the spotlight guarantees their games get seen. We'll add a `spotlights` table that records which game is featured and for which dates, and a large spotlight section at the top of the home page that shows the current featured game with a button to play it on Roblox.
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
+2. **Interest tab (mid priority).** Users need an easy way to find games they'll actually like. We'll add genre tags to each game (with `tags` and `game_tags` tables), let users pick their interests (stored in a `user_interests` table), and build an Interests page that only shows games matching the tags they picked.
 
-## Clone and run locally
+3. **Game commenting and rating (lower priority).** One interviewee said a thumbnail and description don't do a game justice, and Roblox's own rating system doesn't help small games stand out. We'll add a `ratings` table (1 to 5 stars, one rating per user per game) and a `comments` table, show the average rating on every game card, and add a comment section to each game's page.
 
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
+We'll also replace the leftover starter content, like the tutorial steps on the home page and the user details on the protected page, with our own screens.
 
-2. Create a Next.js app using the Supabase Starter template npx command
+## Screenshots
 
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
+### Sign-up page on the live site
+![Sign up page](screenshots/signup.png)
 
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
+### After logging in on the live site
+![Logged in page](screenshots/logged-in.png)
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
+### New user in Supabase (Authentication > Users)
+![New user in Supabase](screenshots/supabase-user.png)
 
-3. Use `cd` to change into the app's directory
+### Vercel deployment is Ready
+![Vercel deployment Ready](screenshots/vercel-ready.png)
 
-   ```bash
-   cd with-supabase-app
-   ```
+### Live site before the Claude Code change
+![Before the change](screenshots/before.png)
 
-4. Rename `.env.example` to `.env.local` and update the following:
-
-  ```env
-  NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
-  ```
-  > [!NOTE]
-  > This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-  > Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-  > See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
-
-  Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
-
-5. You can now run the Next.js local development server:
-
-   ```bash
-   npm run dev
-   ```
-
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
-
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
-
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
-
-## Feedback and issues
-
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
-
-## More Supabase examples
-
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+### Live site after the Claude Code change
+![After the change](screenshots/after.png)
