@@ -2,7 +2,7 @@
 
 A web app built with Next.js and Supabase, deployed on Vercel.
 
-**Live site:** [ADD YOUR VERCEL WEB ADDRESS HERE](https://ADD-YOUR-VERCEL-WEB-ADDRESS-HERE)
+**Live site:** [nextjs-with-supabase-lac-tau.vercel.app](https://nextjs-with-supabase-lac-tau.vercel.app)
 
 ## Where does your code live?
 
