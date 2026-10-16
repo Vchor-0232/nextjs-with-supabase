@@ -24,9 +24,15 @@ The data lives in a Supabase project, which gives the app a Postgres database an
 
 ## What will you need to add to turn this into your team's app?
 
-> ADD YOUR PRODUCT MANAGER'S FEATURE LIST HERE. For each feature, write a sentence or two about what you'd need to build.
+Our app helps Roblox game developers get their games seen. The starter already handles signing up, logging in, logging out, and resetting a password, so accounts are done. Every feature below needs at least one new table in Supabase, with row level security turned on so users can only change their own data, plus new pages in Next.js. All of them depend on a `games` table that stores each game's title, description, thumbnail, Roblox link, and the developer who posted it, and a form where developers submit their games. Thumbnails will be uploaded to Supabase Storage.
 
-The starter already handles signing up, logging in, logging out, and resetting a password, so those don't need to be built from scratch. For most features we'll need to add new tables in Supabase to store the team's data, turn on row level security so each user can only see and edit their own data, and build new pages and forms in Next.js that read and write that data. We'll also replace the leftover starter content, like the tutorial steps on the home page and the user details on the protected page, with our own screens.
+1. **Game spotlight (top priority).** Both game developers we interviewed said getting views is their main worry about uploading to Roblox, so the spotlight guarantees their games get seen. We'll add a `spotlights` table that records which game is featured and for which dates, and a large spotlight section at the top of the home page that shows the current featured game with a button to play it on Roblox.
+
+2. **Interest tab (mid priority).** Users need an easy way to find games they'll actually like. We'll add genre tags to each game (with `tags` and `game_tags` tables), let users pick their interests (stored in a `user_interests` table), and build an Interests page that only shows games matching the tags they picked.
+
+3. **Game commenting and rating (lower priority).** One interviewee said a thumbnail and description don't do a game justice, and Roblox's own rating system doesn't help small games stand out. We'll add a `ratings` table (1 to 5 stars, one rating per user per game) and a `comments` table, show the average rating on every game card, and add a comment section to each game's page.
+
+We'll also replace the leftover starter content, like the tutorial steps on the home page and the user details on the protected page, with our own screens.
 
 ## Screenshots
 
