@@ -18,7 +18,7 @@ export function Hero() {
         </a>
       </div>
       <h1 className="sr-only">Welcome to My Web App</h1>
-      <p className="text-3xl lg:text-4xl !leading-tight mx-auto max-w-xl text-center">
+      <p className="text-3xl lg:text-4xl !leading-tight mx-auto max-w-xl text-center text-primary">
         Welcome! This site is built with{" "}
         <a
           href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
