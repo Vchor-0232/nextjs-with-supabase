@@ -75,6 +75,7 @@ export function CreatePostForm({
                   id="content"
                   rows={5}
                   required
+                  maxLength={5000}
                   placeholder="What's on your mind?"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
