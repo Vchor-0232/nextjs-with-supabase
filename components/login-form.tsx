@@ -1,26 +1,22 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { loginWithUsername } from "@/app/auth/login/actions";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+  AuthButton,
+  AuthDivider,
+  AuthMessage,
+  PillInput,
+} from "@/components/auth/auth-ui";
+import { SocialLogin } from "@/components/auth/social-login";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
+const PHONE_PATTERN = /^\+?[\d\s().-]{7,}$/;
+
+export function LoginForm() {
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,18 +24,29 @@ export function LoginForm({
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
+    const id = identifier.trim();
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
+      if (id.includes("@")) {
+        const supabase = createClient();
+        const { error } = await supabase.auth.signInWithPassword({
+          email: id,
+          password,
+        });
+        if (error) throw error;
+      } else if (PHONE_PATTERN.test(id)) {
+        // Phone login needs an SMS provider set up in Supabase first.
+        throw new Error(
+          "Phone login isn't available yet. Use your username or email.",
+        );
+      } else {
+        const { error } = await loginWithUsername(id, password);
+        if (error) throw new Error(error);
+      }
       router.push("/protected");
+      router.refresh();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
@@ -48,63 +55,48 @@ export function LoginForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
-                Sign up
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+    <div className="flex w-full flex-col items-center">
+      <form onSubmit={handleLogin} className="flex w-full flex-col gap-5">
+        <PillInput
+          placeholder="Username or Email"
+          autoComplete="username"
+          autoCapitalize="none"
+          required
+          value={identifier}
+          onChange={(e) => setIdentifier(e.target.value)}
+        />
+        <PillInput
+          type="password"
+          placeholder="Password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        {error && <AuthMessage>{error}</AuthMessage>}
+        <AuthButton type="submit" disabled={isLoading} className="mt-1">
+          {isLoading ? "Logging in..." : "Log in"}
+        </AuthButton>
+        <Link
+          href="/auth/forgot-password"
+          className="-mt-1 self-center text-sm font-semibold underline-offset-4 hover:underline"
+        >
+          Forgot your password?
+        </Link>
+      </form>
+
+      <AuthDivider />
+      <SocialLogin />
+
+      <p className="mt-10 text-sm font-semibold">
+        New to Gamesprout?{" "}
+        <Link
+          href="/auth/sign-up"
+          className="font-bold text-black underline underline-offset-4"
+        >
+          Sign up
+        </Link>
+      </p>
     </div>
   );
 }
