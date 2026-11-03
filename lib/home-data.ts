@@ -12,7 +12,7 @@ export type GameCard = {
   title: string;
   thumbnailUrl: string | null;
   robloxUrl: string;
-  visits: number;
+  views: number;
   ratingPct: number | null;
   tags: string[];
 };
@@ -24,24 +24,34 @@ type ProfileRow = {
   avatar_url: string | null;
 };
 
-type GameStatsRow = {
+// Columns of the tables already in Supabase (games, game_stats view).
+type GameRow = {
   id: string;
   title: string;
   thumbnail_url: string | null;
   roblox_url: string;
-  visits: number;
-  rating_pct: number | null;
+  created_at: string;
 };
 
-const GAME_COLUMNS = "id, title, thumbnail_url, roblox_url, visits, rating_pct";
+type GameStatsRow = {
+  game_id: string;
+  avg_rating: number | string | null; // 1–5 stars
+  rating_count: number | string | null;
+  view_count: number | string | null;
+};
+
 const PROFILE_COLUMNS = "id, username, display_name, avatar_url";
+
+// How many of the newest published games to rank. Plenty while Gamesprout
+// is small; move the ranking into a database view once there are more.
+const GAMES_TO_RANK = 100;
 
 // Everything the Home page shows, read as the logged-in user (so the
 // database's security rules decide what they can see).
 export async function getHomeData(userId: string) {
   const supabase = await createClient();
 
-  const [friendsRes, recommendedRes, popularRes] = await Promise.all([
+  const [friendsRes, gamesRes] = await Promise.all([
     supabase
       .from("friendships")
       .select(
@@ -54,22 +64,13 @@ export async function getHomeData(userId: string) {
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
       .order("created_at", { ascending: false })
       .limit(12),
-    // "Recommended" is the best-rated games for now (newest if nothing is
-    // rated yet). It becomes personal once the Interests feature exists.
     supabase
-      .from("game_stats")
-      .select(GAME_COLUMNS)
-      .order("rating_pct", { ascending: false, nullsFirst: false })
+      .from("games")
+      .select("id, title, thumbnail_url, roblox_url, created_at")
+      .eq("is_published", true)
       .order("created_at", { ascending: false })
-      .limit(2),
-    supabase
-      .from("game_stats")
-      .select(GAME_COLUMNS)
-      .order("visits", { ascending: false })
-      .limit(3),
+      .limit(GAMES_TO_RANK),
   ]);
-
-  const error = friendsRes.error ?? recommendedRes.error ?? popularRes.error;
 
   const friends: FriendCard[] = (
     (friendsRes.data ?? []) as unknown as {
@@ -87,46 +88,28 @@ export async function getHomeData(userId: string) {
     };
   });
 
-  const recommendedRows = (recommendedRes.data ?? []) as GameStatsRow[];
-  const popularRows = (popularRes.data ?? []) as GameStatsRow[];
-  const tagsByGame = await getTags(
-    supabase,
-    [...recommendedRows, ...popularRows].map((g) => g.id),
+  const games = (gamesRes.data ?? []) as GameRow[];
+  const ids = games.map((g) => g.id);
+
+  const [statsRes, tagsRes] = ids.length
+    ? await Promise.all([
+        supabase
+          .from("game_stats")
+          .select("game_id, avg_rating, rating_count, view_count")
+          .in("game_id", ids),
+        supabase
+          .from("game_tags")
+          .select("game_id, tags(name)")
+          .in("game_id", ids),
+      ])
+    : [null, null];
+
+  const statsByGame = new Map(
+    ((statsRes?.data ?? []) as GameStatsRow[]).map((s) => [s.game_id, s]),
   );
 
-  const toCard = (g: GameStatsRow): GameCard => ({
-    id: g.id,
-    title: g.title,
-    thumbnailUrl: g.thumbnail_url,
-    robloxUrl: g.roblox_url,
-    visits: Number(g.visits),
-    ratingPct: g.rating_pct,
-    tags: tagsByGame.get(g.id) ?? [],
-  });
-
-  return {
-    error: error?.message ?? null,
-    friendCount: friendsRes.count ?? friends.length,
-    friends,
-    recommended: recommendedRows.map(toCard),
-    popular: popularRows.map(toCard),
-  };
-}
-
-async function getTags(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  gameIds: string[],
-) {
   const tagsByGame = new Map<string, string[]>();
-  if (gameIds.length === 0) return tagsByGame;
-
-  const { data } = await supabase
-    .from("game_tags")
-    .select("game_id, position, tags(name)")
-    .in("game_id", [...new Set(gameIds)])
-    .order("position");
-
-  for (const row of (data ?? []) as unknown as {
+  for (const row of (tagsRes?.data ?? []) as unknown as {
     game_id: string;
     tags: { name: string } | null;
   }[]) {
@@ -136,7 +119,63 @@ async function getTags(
       row.tags.name,
     ]);
   }
-  return tagsByGame;
+
+  const cards = games.map((g) => {
+    const stats = statsByGame.get(g.id);
+    const ratingCount = Number(stats?.rating_count ?? 0);
+    const avg = stats?.avg_rating == null ? null : Number(stats.avg_rating);
+    return {
+      id: g.id,
+      title: g.title,
+      thumbnailUrl: g.thumbnail_url,
+      robloxUrl: g.roblox_url,
+      views: Number(stats?.view_count ?? 0),
+      // Stars shown as a percentage, like the design: 4.35 of 5 = 87%.
+      ratingPct:
+        avg === null || ratingCount === 0 ? null : Math.round((avg / 5) * 100),
+      ratingCount,
+      tags: tagsByGame.get(g.id) ?? [],
+      createdAt: g.created_at,
+    };
+  });
+
+  // "Recommended" is the best-rated games for now (newest first when tied
+  // or unrated). It becomes personal once Interests is built.
+  const recommended = [...cards]
+    .sort(
+      (a, b) =>
+        (b.ratingPct ?? -1) - (a.ratingPct ?? -1) ||
+        b.ratingCount - a.ratingCount ||
+        b.createdAt.localeCompare(a.createdAt),
+    )
+    .slice(0, 2);
+
+  const popular = [...cards]
+    .sort(
+      (a, b) => b.views - a.views || b.createdAt.localeCompare(a.createdAt),
+    )
+    .slice(0, 3);
+
+  const toCard = (c: (typeof cards)[number]): GameCard => ({
+    id: c.id,
+    title: c.title,
+    thumbnailUrl: c.thumbnailUrl,
+    robloxUrl: c.robloxUrl,
+    views: c.views,
+    ratingPct: c.ratingPct,
+    tags: c.tags,
+  });
+
+  const error =
+    friendsRes.error ?? gamesRes.error ?? statsRes?.error ?? tagsRes?.error;
+
+  return {
+    error: error?.message ?? null,
+    friendCount: friendsRes.count ?? friends.length,
+    friends,
+    recommended: recommended.map(toCard),
+    popular: popular.map(toCard),
+  };
 }
 
 export async function getMyProfile(userId: string) {
@@ -155,9 +194,9 @@ export async function getMyProfile(userId: string) {
   } | null;
 }
 
-export function formatVisits(visits: number) {
+export function formatCount(count: number) {
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
     maximumFractionDigits: 1,
-  }).format(visits);
+  }).format(count);
 }

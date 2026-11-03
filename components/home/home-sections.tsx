@@ -3,7 +3,7 @@
 import { Gamepad2, ThumbsUp } from "lucide-react";
 import { SectionHeader } from "@/components/home/app-chrome";
 import {
-  formatVisits,
+  formatCount,
   type FriendCard,
   type GameCard,
 } from "@/lib/home-data";
@@ -167,7 +167,7 @@ export function PopularSection({ games }: { games: GameCard[] }) {
                   <Rating pct={g.ratingPct} />
                 </div>
                 <span className="shrink-0 self-start pt-1 text-xs text-neutral-300">
-                  {formatVisits(g.visits)} Visits
+                  {formatCount(g.views)} {g.views === 1 ? "View" : "Views"}
                 </span>
               </a>
             </li>
