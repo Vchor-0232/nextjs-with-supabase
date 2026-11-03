@@ -51,7 +51,7 @@ const GAMES_TO_RANK = 100;
 export async function getHomeData(userId: string) {
   const supabase = await createClient();
 
-  const [friendsRes, gamesRes] = await Promise.all([
+  const [friendsRes, games] = await Promise.all([
     supabase
       .from("friendships")
       .select(
@@ -64,12 +64,7 @@ export async function getHomeData(userId: string) {
       .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
       .order("created_at", { ascending: false })
       .limit(12),
-    supabase
-      .from("games")
-      .select("id, title, thumbnail_url, roblox_url, created_at")
-      .eq("is_published", true)
-      .order("created_at", { ascending: false })
-      .limit(GAMES_TO_RANK),
+    getGameLists(),
   ]);
 
   const friends: FriendCard[] = (
@@ -87,6 +82,27 @@ export async function getHomeData(userId: string) {
       avatarUrl: other.avatar_url,
     };
   });
+
+  return {
+    error: friendsRes.error?.message ?? games.error,
+    friendCount: friendsRes.count ?? friends.length,
+    friends,
+    recommended: games.recommended,
+    popular: games.popular,
+  };
+}
+
+// Recommended and Popular Now. Also used by the public home page, so it
+// only reads what logged-out visitors are allowed to see.
+export async function getGameLists() {
+  const supabase = await createClient();
+
+  const gamesRes = await supabase
+    .from("games")
+    .select("id, title, thumbnail_url, roblox_url, created_at")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(GAMES_TO_RANK);
 
   const games = (gamesRes.data ?? []) as GameRow[];
   const ids = games.map((g) => g.id);
@@ -166,13 +182,10 @@ export async function getHomeData(userId: string) {
     tags: c.tags,
   });
 
-  const error =
-    friendsRes.error ?? gamesRes.error ?? statsRes?.error ?? tagsRes?.error;
+  const error = gamesRes.error ?? statsRes?.error ?? tagsRes?.error;
 
   return {
     error: error?.message ?? null,
-    friendCount: friendsRes.count ?? friends.length,
-    friends,
     recommended: recommended.map(toCard),
     popular: popular.map(toCard),
   };

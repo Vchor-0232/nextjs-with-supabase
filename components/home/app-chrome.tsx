@@ -2,25 +2,56 @@ import Link from "next/link";
 import { Bell, Gamepad2, Search, Sprout } from "lucide-react";
 import { BottomNav } from "@/components/home/bottom-nav";
 
-// The frame around every logged-in page: blue header on top, tab bar at the
-// bottom, black in between (from the Figma "homepage" frame).
-export function AppChrome({ children }: { children: React.ReactNode }) {
+// The frame around every page: blue header on top, bar at the bottom, black
+// in between (from the Figma "homepage" frame). Logged-in pages get the tab
+// bar; the public home page gets Log in / Sign up instead.
+export function AppChrome({
+  children,
+  variant = "app",
+}: {
+  children: React.ReactNode;
+  variant?: "app" | "public";
+}) {
   return (
     <div className="min-h-svh bg-black text-white">
       <div className="mx-auto flex min-h-svh w-full max-w-md flex-col">
-        <AppHeader />
+        <AppHeader variant={variant} />
         <main className="flex-1 px-3 pb-28 pt-4">{children}</main>
-        <BottomNav />
+        {variant === "app" ? <BottomNav /> : <PublicBottomBar />}
       </div>
     </div>
   );
 }
 
-function AppHeader() {
+function PublicBottomBar() {
+  const button =
+    "flex h-11 flex-1 items-center justify-center rounded-full border font-bold shadow-[0_4px_6px_rgba(0,0,0,0.35)] transition";
+  return (
+    <nav
+      aria-label="Account"
+      className="fixed inset-x-0 bottom-0 z-20 mx-auto flex w-full max-w-md gap-3 rounded-t-3xl bg-[#4d62db] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-4px_12px_rgba(0,0,0,0.5)]"
+    >
+      <Link
+        href="/auth/login"
+        className={`${button} border-white/60 bg-black text-white hover:bg-neutral-900`}
+      >
+        Log in
+      </Link>
+      <Link
+        href="/auth/sign-up"
+        className={`${button} border-black bg-white text-black hover:bg-neutral-200`}
+      >
+        Sign up
+      </Link>
+    </nav>
+  );
+}
+
+function AppHeader({ variant }: { variant: "app" | "public" }) {
   return (
     <header className="sticky top-0 z-20 flex h-12 items-center justify-between rounded-b-2xl bg-[#4d62db] px-4 shadow-[0_4px_10px_rgba(0,0,0,0.4)]">
       <Link
-        href="/protected"
+        href={variant === "app" ? "/protected" : "/"}
         className="flex items-center gap-1.5 text-[15px] font-bold"
         aria-label="Gamesprout home"
       >
@@ -33,6 +64,14 @@ function AppHeader() {
         </span>
         Gamesprout
       </Link>
+      {variant === "public" ? (
+        <Link
+          href="/auth/login"
+          className="rounded-full px-3 py-1 text-sm font-bold transition hover:bg-white/15"
+        >
+          Log in
+        </Link>
+      ) : (
       <div className="flex items-center gap-3">
         {/* Search and notifications aren't built yet. */}
         <button
@@ -52,6 +91,7 @@ function AppHeader() {
           <Bell className="h-5 w-5" strokeWidth={2.5} />
         </button>
       </div>
+      )}
     </header>
   );
 }

@@ -1,58 +1,42 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { AppChrome } from "@/components/home/app-chrome";
+import {
+  GameSpotlight,
+  PLACEHOLDER_SPOTLIGHT,
+} from "@/components/home/game-spotlight";
+import { PopularSection } from "@/components/home/home-sections";
+import { getGameLists } from "@/lib/home-data";
+import { createClient } from "@/lib/supabase/server";
 
-export default function Home() {
+// Public home page for visitors who haven't logged in. No Friends or
+// Recommended sections, since those need an account.
+async function PopularForVisitors() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (data?.claims) {
+    // Logged-in users get their own Home page.
+    redirect("/protected");
+  }
+
+  const { popular, error } = await getGameLists();
+  if (error) {
+    // Visitors just see "No games yet"; the details go to the server logs.
+    console.error("Popular Now failed to load:", error);
+  }
+
+  return <PopularSection games={popular} seeAllHref="/auth/sign-up" />;
+}
+
+export default function Page() {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>My Web App</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
-            </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
-          </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Get started</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
-        </div>
-
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
-    </main>
+    <AppChrome variant="public">
+      <GameSpotlight game={PLACEHOLDER_SPOTLIGHT} />
+      <Suspense
+        fallback={<div className="h-60 animate-pulse rounded-2xl bg-neutral-900" />}
+      >
+        <PopularForVisitors />
+      </Suspense>
+    </AppChrome>
   );
 }
