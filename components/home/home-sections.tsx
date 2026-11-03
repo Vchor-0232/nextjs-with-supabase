@@ -131,10 +131,16 @@ export function RecommendedSection({ games }: { games: GameCard[] }) {
   );
 }
 
-export function PopularSection({ games }: { games: GameCard[] }) {
+export function PopularSection({
+  games,
+  seeAllHref = "/protected/charts",
+}: {
+  games: GameCard[];
+  seeAllHref?: string;
+}) {
   return (
     <section className="mb-4">
-      <SectionHeader title="Popular Now" href="/protected/charts" />
+      <SectionHeader title="Popular Now" href={seeAllHref} />
       {games.length === 0 ? (
         <EmptyGames />
       ) : (
