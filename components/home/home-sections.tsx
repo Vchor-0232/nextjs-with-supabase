@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element -- thumbnails and avatars come
    from any host developers use, so we skip next/image's domain list. */
+import Link from "next/link";
 import { Gamepad2, ThumbsUp } from "lucide-react";
 import { SectionHeader } from "@/components/home/app-chrome";
 import {
@@ -133,10 +134,8 @@ export function GameGridSection({
         <ul className="grid grid-cols-2 gap-2">
           {games.map((g) => (
             <li key={g.id}>
-              <a
-                href={g.robloxUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/games/${g.id}`}
                 className="block overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 transition hover:border-[#4d62db]"
               >
                 <Thumbnail game={g} className="aspect-[4/3] w-full" />
@@ -144,7 +143,7 @@ export function GameGridSection({
                   <p className="truncate text-sm font-bold">{g.title}</p>
                   <Rating pct={g.ratingPct} />
                 </div>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -169,10 +168,8 @@ export function PopularSection({
         <ul className="flex flex-col gap-2">
           {games.map((g) => (
             <li key={g.id}>
-              <a
-                href={g.robloxUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href={`/games/${g.id}`}
                 className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-2 transition hover:border-[#4d62db]"
               >
                 <Thumbnail game={g} className="h-16 w-16 shrink-0 rounded-lg" />
@@ -198,7 +195,7 @@ export function PopularSection({
                   {formatCount(g.views)}{" "}
                   {g.views === 1 ? g.viewsLabel.slice(0, -1) : g.viewsLabel}
                 </span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>

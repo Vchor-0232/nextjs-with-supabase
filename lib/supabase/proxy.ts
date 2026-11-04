@@ -53,7 +53,9 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
     // Scheduled jobs have no logged-in user; they check CRON_SECRET instead.
-    !request.nextUrl.pathname.startsWith("/api/cron")
+    !request.nextUrl.pathname.startsWith("/api/cron") &&
+    // Game pages are public, so visitors can tap games on the home page.
+    !request.nextUrl.pathname.startsWith("/games/")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();

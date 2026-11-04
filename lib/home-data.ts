@@ -11,7 +11,6 @@ export type GameCard = {
   id: string;
   title: string;
   thumbnailUrl: string | null;
-  robloxUrl: string;
   views: number;
   viewsLabel: "Visits" | "Views"; // Roblox visits, or views on Gamesprout
   ratingPct: number | null;
@@ -30,7 +29,6 @@ type GameRow = {
   id: string;
   title: string;
   thumbnail_url: string | null;
-  roblox_url: string;
   created_at: string;
 };
 
@@ -175,7 +173,6 @@ async function buildGameCards(supabase: Supabase, games: GameRow[]) {
       id: g.id,
       title: g.title,
       thumbnailUrl: g.thumbnail_url ?? roblox?.icon_url ?? null,
-      robloxUrl: g.roblox_url,
       views: robloxVisits ?? Number(stats?.view_count ?? 0),
       viewsLabel: (robloxVisits === null ? "Views" : "Visits") as GameCard["viewsLabel"],
       ratingPct: robloxLikePct ?? starPct,
@@ -199,7 +196,6 @@ const toCard = (c: RankedCard): GameCard => ({
   id: c.id,
   title: c.title,
   thumbnailUrl: c.thumbnailUrl,
-  robloxUrl: c.robloxUrl,
   views: c.views,
   viewsLabel: c.viewsLabel,
   ratingPct: c.ratingPct,
@@ -213,7 +209,7 @@ export async function getGameLists() {
 
   const gamesRes = await supabase
     .from("games")
-    .select("id, title, thumbnail_url, roblox_url, created_at")
+    .select("id, title, thumbnail_url, created_at")
     .eq("is_published", true)
     .order("created_at", { ascending: false })
     .limit(GAMES_TO_RANK);
@@ -323,7 +319,7 @@ export async function getProfilePage(userId: string) {
       supabase
         .from("favorite_games")
         .select(
-          "created_at, games(id, title, thumbnail_url, roblox_url, created_at, is_published)",
+          "created_at, games(id, title, thumbnail_url, created_at, is_published)",
           { count: "exact" },
         )
         .eq("user_id", userId)
