@@ -230,11 +230,11 @@ export async function getGameLists() {
     )
     .slice(0, 2);
 
-  const popular = [...cards]
-    .sort(
-      (a, b) => b.views - a.views || b.createdAt.localeCompare(a.createdAt),
-    )
-    .slice(0, 3);
+  // Every game, most visited first (the Charts tab shows all of these).
+  const byVisits = [...cards].sort(
+    (a, b) => b.views - a.views || b.createdAt.localeCompare(a.createdAt),
+  );
+  const popular = byVisits.slice(0, 3);
 
   const error = gamesRes.error ?? cardsError;
 
@@ -242,6 +242,7 @@ export async function getGameLists() {
     error: error?.message ?? null,
     recommended: recommended.map(toCard),
     popular: popular.map(toCard),
+    all: byVisits.map(toCard),
   };
 }
 

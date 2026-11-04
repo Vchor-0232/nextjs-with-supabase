@@ -58,7 +58,7 @@ export async function getGameDetail(id: string): Promise<GameDetail | null> {
     supabase
       .from("roblox_stats")
       .select(
-        "creator_name, visits, playing, favorites, up_votes, down_votes, icon_url, screenshot_urls, roblox_updated_at, synced_at, sync_error",
+        "creator_name, description, visits, playing, favorites, up_votes, down_votes, icon_url, screenshot_urls, roblox_updated_at, synced_at, sync_error",
       )
       .eq("game_id", id)
       .maybeSingle(),
@@ -76,7 +76,8 @@ export async function getGameDetail(id: string): Promise<GameDetail | null> {
   return {
     id: game.id,
     title: game.title,
-    description: game.description,
+    // Gamesprout's description, or the game's Roblox one for imported games.
+    description: game.description ?? r?.description ?? null,
     thumbnailUrl: game.thumbnail_url ?? r?.icon_url ?? null,
     madeBy:
       (hasRobloxNumbers ? r?.creator_name : null) ??

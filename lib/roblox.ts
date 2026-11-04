@@ -9,6 +9,7 @@ export type RobloxGameInfo = {
   placeId: number;
   universeId: number;
   name: string;
+  description: string | null;
   creatorName: string | null;
   visits: number;
   playing: number;
@@ -168,6 +169,7 @@ export async function fetchRobloxGames(
             placeId,
             universeId,
             name: g.name,
+            description: g.description?.slice(0, 2000) || null,
             creatorName: g.creator?.name ?? null,
             visits: g.visits ?? 0,
             playing: g.playing ?? 0,
@@ -195,9 +197,73 @@ export async function fetchRobloxGames(
 type GameDetail = {
   id: number;
   name: string;
+  description?: string | null;
   creator?: { name?: string };
   visits?: number;
   playing?: number;
   favoritedCount?: number;
   updated?: string;
 };
+
+// --- Importing Roblox's top games ------------------------------------------
+
+export type TopRobloxGame = {
+  universeId: number;
+  placeId: number;
+  name: string;
+  genre: string | null;
+  list: string;
+};
+
+type ExploreGame = {
+  universeId: number;
+  rootPlaceId: number;
+  name: string;
+  isSponsored?: boolean;
+  contentMaturity?: string;
+  genreL1?: string;
+};
+
+// Many Gamesprout users are kids, so only import games Roblox rates
+// "Minimal" or "Mild". Sponsored (paid) placements are skipped too.
+const ALLOWED_MATURITY = new Set(["minimal", "mild"]);
+
+/**
+ * Games from Roblox's discovery lists (the ones on roblox.com/charts),
+ * e.g. "top-playing-now" or "up-and-coming". Takes the first `perList`
+ * allowed games from each list, without duplicates.
+ */
+export async function fetchTopRobloxGames(
+  lists: string[],
+  perList: number,
+): Promise<TopRobloxGame[]> {
+  const data = await getJson<{
+    sorts: { sortId: string; contentType?: string; games?: ExploreGame[] }[];
+  }>(
+    `https://apis.roblox.com/explore-api/v1/get-sorts?sessionId=${crypto.randomUUID()}&device=computer&country=all`,
+  );
+
+  const seen = new Set<number>();
+  const out: TopRobloxGame[] = [];
+  for (const listId of lists) {
+    const sort = data.sorts.find((s) => s.sortId === listId);
+    if (!sort?.games) continue;
+    let taken = 0;
+    for (const g of sort.games) {
+      if (taken >= perList) break;
+      if (g.isSponsored) continue;
+      if (!ALLOWED_MATURITY.has((g.contentMaturity ?? "").toLowerCase())) continue;
+      if (!g.rootPlaceId || seen.has(g.rootPlaceId)) continue;
+      seen.add(g.rootPlaceId);
+      out.push({
+        universeId: g.universeId,
+        placeId: g.rootPlaceId,
+        name: g.name,
+        genre: g.genreL1 ?? null,
+        list: listId,
+      });
+      taken++;
+    }
+  }
+  return out;
+}
