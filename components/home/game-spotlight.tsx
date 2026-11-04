@@ -29,6 +29,7 @@ export type SpotlightStats = {
 export type SpotlightGame = {
   title: string;
   developer: string;
+  subtitle?: string; // replaces "Made by …" when set
   slides: SpotlightSlide[];
   stats: SpotlightStats;
 };
@@ -37,7 +38,8 @@ export type SpotlightGame = {
 // from the spotlights table instead.
 export const PLACEHOLDER_SPOTLIGHT: SpotlightGame = {
   title: "Game Spotlight",
-  developer: "Featured games are coming soon",
+  developer: "",
+  subtitle: "Featured games are coming soon",
   slides: [
     { label: "CONCEPT ART", caption: "A featured game's art goes here" },
     { label: "GAMEPLAY", caption: "Screenshots from the game" },
@@ -73,9 +75,7 @@ export function GameSpotlight({ game }: { game: SpotlightGame }) {
         {game.title}
       </h1>
       <p className="mb-2 px-1 text-[15px] font-semibold text-neutral-200">
-        {game.developer.startsWith("Featured")
-          ? game.developer
-          : `Made by ${game.developer}`}
+        {game.subtitle ?? `Made by ${game.developer}`}
       </p>
 
       <div
