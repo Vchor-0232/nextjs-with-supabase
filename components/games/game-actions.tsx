@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Heart, Star, ThumbsDown, ThumbsUp } from "lucide-react";
+import { useReviewBox } from "@/components/games/reviews";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +99,7 @@ export function FavoriteButton({
 }
 
 // The blue stats strip from the design, where each part does something:
-// tap a star to rate 1–5, tap the thumbs to like or dislike.
+// tap a star to open the rating box, tap the thumbs to like or dislike.
 export function GameStatsBar({
   gameId,
   userId,
@@ -124,7 +125,7 @@ export function GameStatsBar({
   gamesproutLikes: number;
   gamesproutDislikes: number;
 }) {
-  const [rating, setRating] = useState(initialRating);
+  const { myRating: rating, open: openReviewBox } = useReviewBox();
   const [vote, setVote] = useState<Vote>(initialVote);
   const [hover, setHover] = useState<number | null>(null);
   const toast = useToast();
@@ -143,37 +144,23 @@ export function GameStatsBar({
   const avg = count ? (othersTotal + (rating ?? 0)) / count : null;
   const filled = hover ?? rating ?? (avg === null ? 0 : Math.round(avg));
 
-  const rate = async (score: number) => {
-    if (!userId) return toast.show("Log in to rate games.", true);
-    const previous = rating;
-    setRating(score);
-    const { error } = await createClient()
-      .from("ratings")
-      .upsert(
-        { game_id: gameId, user_id: userId, score },
-        { onConflict: "user_id,game_id" },
-      );
-    if (error) {
-      setRating(previous);
-      return toast.show("Couldn't save your rating. Try again.");
-    }
-    toast.show(`You rated it ${score} star${score === 1 ? "" : "s"}`);
-    router.refresh();
-  };
-
   const castVote = async (next: Exclude<Vote, null>) => {
     if (!userId) return toast.show("Log in to like or dislike games.", true);
     const previous = vote;
     const updated = vote === next ? null : next; // tap again to undo
     setVote(updated);
     const votes = createClient().from("game_votes");
+    // Add a new vote, or flip an existing one. (An upsert would also try to
+    // rewrite game_id and user_id, which the table doesn't allow.)
     const { error } =
       updated === null
         ? await votes.delete().eq("game_id", gameId).eq("user_id", userId)
-        : await votes.upsert(
-            { game_id: gameId, user_id: userId, is_like: updated === "like" },
-            { onConflict: "game_id,user_id" },
-          );
+        : previous === null
+          ? await votes.insert({ game_id: gameId, user_id: userId, is_like: updated === "like" })
+          : await votes
+              .update({ is_like: updated === "like" })
+              .eq("game_id", gameId)
+              .eq("user_id", userId);
     if (error) {
       setVote(previous);
       return toast.show("Couldn't save your vote. Try again.");
@@ -207,8 +194,8 @@ export function GameStatsBar({
               type="button"
               role="radio"
               aria-checked={rating === n}
-              aria-label={`${n} star${n === 1 ? "" : "s"}`}
-              onClick={() => rate(n)}
+              aria-label={`Rate ${n} star${n === 1 ? "" : "s"}`}
+              onClick={() => openReviewBox(n)}
               onMouseEnter={() => setHover(n)}
               className="p-0.5"
             >

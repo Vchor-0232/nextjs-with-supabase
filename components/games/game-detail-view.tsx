@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
 import { FavoriteButton, GameStatsBar } from "@/components/games/game-actions";
+import { ExpandableText } from "@/components/games/expandable-text";
+import { ReviewProvider, ReviewsSection } from "@/components/games/reviews";
 import {
   GameSpotlight,
   type SpotlightGame,
 } from "@/components/home/game-spotlight";
-import type { GameDetail } from "@/lib/game-detail";
+import type { GameDetail, Review } from "@/lib/game-detail";
 import { formatCount } from "@/lib/home-data";
 
 // The body of a game's Gamesprout page: screenshots, stats bar and details.
@@ -60,9 +61,10 @@ function GameInfo({ game }: { game: GameDetail }) {
     <>
       <section className="mb-3 rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-2.5 shadow-[0_8px_18px_-12px_rgba(0,0,0,0.65)]">
         <h2 className="mb-1 text-base font-bold">Description</h2>
-        <p className="whitespace-pre-line text-[13px] leading-relaxed text-white/90">
-          {game.description?.trim() || "No description yet."}
-        </p>
+        <ExpandableText
+          text={game.description?.trim() || "No description yet."}
+          className="whitespace-pre-line text-[13px] leading-relaxed text-white/90"
+        />
       </section>
 
       {game.tags.length > 0 && (
@@ -96,13 +98,18 @@ function GameInfo({ game }: { game: GameDetail }) {
 
 export function GameDetailView({
   game,
-  comments,
+  reviews,
 }: {
   game: GameDetail;
-  comments?: ReactNode;
+  reviews: { reviews: Review[]; total: number };
 }) {
   return (
-    <>
+    <ReviewProvider
+      gameId={game.id}
+      gameTitle={game.title}
+      userId={game.viewer.userId}
+      myRating={game.viewer.rating}
+    >
       <GameSpotlight
         game={toSpotlight(game)}
         titleAction={
@@ -129,7 +136,7 @@ export function GameDetailView({
         }
       />
       <GameInfo game={game} />
-      {comments}
-    </>
+      <ReviewsSection gameId={game.id} reviews={reviews.reviews} total={reviews.total} />
+    </ReviewProvider>
   );
 }

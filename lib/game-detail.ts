@@ -180,3 +180,116 @@ export async function getGameDetail(
       : null,
   };
 }
+
+export type ReviewAuthor = {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+};
+
+export type Reply = {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: ReviewAuthor;
+};
+
+export type Review = Reply & {
+  rating: number | null; // the writer's current star rating for this game
+  replies: Reply[];
+};
+
+type CommentRow = {
+  id: string;
+  body: string;
+  created_at: string;
+  parent_id: string | null;
+  author: {
+    id: string;
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
+
+const REVIEWS_SHOWN = 50;
+
+// Reviews (top-level comments) with the writer's rating and their replies,
+// newest reviews first and replies oldest first, like a conversation.
+export async function getGameReviews(gameId: string) {
+  const supabase = await createClient();
+
+  const reviewsRes = await supabase
+    .from("comments")
+    .select(
+      "id, body, created_at, parent_id, author:profiles!comments_user_id_fkey(id, username, display_name, avatar_url)",
+      { count: "exact" },
+    )
+    .eq("game_id", gameId)
+    .is("parent_id", null)
+    .order("created_at", { ascending: false })
+    .limit(REVIEWS_SHOWN);
+
+  const reviewRows = (reviewsRes.data ?? []) as unknown as CommentRow[];
+  const reviewIds = reviewRows.map((r) => r.id);
+  const authorIds = [
+    ...new Set(reviewRows.map((r) => r.author?.id).filter((id): id is string => !!id)),
+  ];
+
+  const [repliesRes, ratingsRes] = await Promise.all([
+    reviewIds.length
+      ? supabase
+          .from("comments")
+          .select(
+            "id, body, created_at, parent_id, author:profiles!comments_user_id_fkey(id, username, display_name, avatar_url)",
+          )
+          .in("parent_id", reviewIds)
+          .order("created_at", { ascending: true })
+      : Promise.resolve({ data: [], error: null }),
+    authorIds.length
+      ? supabase
+          .from("ratings")
+          .select("user_id, score")
+          .eq("game_id", gameId)
+          .in("user_id", authorIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const toAuthor = (a: CommentRow["author"]): ReviewAuthor => ({
+    id: a?.id ?? "",
+    username: a?.username ?? "player",
+    displayName: a?.display_name ?? null,
+    avatarUrl: a?.avatar_url ?? null,
+  });
+  const toReply = (c: CommentRow): Reply => ({
+    id: c.id,
+    body: c.body,
+    createdAt: c.created_at,
+    author: toAuthor(c.author),
+  });
+
+  const ratingByUser = new Map(
+    ((ratingsRes.data ?? []) as { user_id: string; score: number }[]).map((r) => [
+      r.user_id,
+      Number(r.score),
+    ]),
+  );
+  const repliesByReview = new Map<string, Reply[]>();
+  for (const c of (repliesRes.data ?? []) as unknown as CommentRow[]) {
+    if (!c.parent_id) continue;
+    repliesByReview.set(c.parent_id, [...(repliesByReview.get(c.parent_id) ?? []), toReply(c)]);
+  }
+
+  return {
+    error: reviewsRes.error?.message ?? repliesRes.error?.message ?? null,
+    total: reviewsRes.count ?? reviewRows.length,
+    reviews: reviewRows.map(
+      (c): Review => ({
+        ...toReply(c),
+        rating: c.author ? (ratingByUser.get(c.author.id) ?? null) : null,
+        replies: repliesByReview.get(c.id) ?? [],
+      }),
+    ),
+  };
+}

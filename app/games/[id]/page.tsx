@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AppChrome } from "@/components/home/app-chrome";
 import { GameDetailView } from "@/components/games/game-detail-view";
-import { getGameDetail } from "@/lib/game-detail";
+import { getGameDetail, getGameReviews } from "@/lib/game-detail";
 import { createClient } from "@/lib/supabase/server";
 
 // A game's page on Gamesprout. Public, so visitors can tap games too.
@@ -13,8 +13,12 @@ async function GamePageContent({ params }: { params: Promise<{ id: string }> }) 
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getClaims();
   const viewerId = auth?.claims?.sub ?? null;
-  const game = await getGameDetail(id, viewerId);
+  const [game, reviews] = await Promise.all([
+    getGameDetail(id, viewerId),
+    getGameReviews(id),
+  ]);
   if (!game) notFound();
+  if (reviews.error) console.error("Reviews failed to load:", reviews.error);
 
   const loggedIn = viewerId !== null;
 
@@ -27,7 +31,7 @@ async function GamePageContent({ params }: { params: Promise<{ id: string }> }) 
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         Back
       </Link>
-      <GameDetailView game={game} />
+      <GameDetailView game={game} reviews={reviews} />
     </AppChrome>
   );
 }
