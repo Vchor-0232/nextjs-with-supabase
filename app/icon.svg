@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <rect width="120" height="120" rx="26" fill="#4d62db"/>
+  <g transform="translate(4 12) scale(0.933)">
+  <defs>
+    <mask id="cut">
+      <rect width="120" height="100" fill="#fff"/>
+      <!-- d-pad -->
+      <path d="M31.5 41h5v4.5h4.5v5h-4.5v4.5h-5v-4.5H27v-5h4.5z" fill="#000"/>
+      <!-- face buttons -->
+      <circle cx="86" cy="41.5" r="3.1" fill="#000"/>
+      <circle cx="92.5" cy="48" r="3.1" fill="#000"/>
+      <circle cx="86" cy="54.5" r="3.1" fill="#000"/>
+      <circle cx="79.5" cy="48" r="3.1" fill="#000"/>
+      <!-- thumbstick wells -->
+      <circle cx="46" cy="63" r="7.5" fill="#000"/>
+      <circle cx="74" cy="63" r="7.5" fill="#000"/>
+    </mask>
+  </defs>
+
+  <!-- controller body -->
+  <path mask="url(#cut)" fill="#000" d="M33 31.5h54c8 0 13.5 3.5 15 10.5l7.6 30.5c2.6 10.5-3.8 18.4-11.6 17.3-5.4-.8-8.4-5-11.2-10.3L82 70.5H38l-4.8 9c-2.8 5.3-5.8 9.5-11.2 10.3-7.8 1.1-14.2-6.8-11.6-17.3L18 42c1.5-7 7-10.5 15-10.5z"/>
+  <!-- thumbstick caps -->
+  <circle cx="46" cy="63" r="4.6" fill="#000"/>
+  <circle cx="74" cy="63" r="4.6" fill="#000"/>
+
+  <!-- stem, rising out of the touchpad -->
+  <path d="M60 46c0-8 .3-15 1.6-22" fill="none" stroke="#6fa33f" stroke-width="4.2" stroke-linecap="round"/>
+
+  <!-- leaves -->
+  <path d="M60.5 26C55 13 41 6.5 29 9c2.5 12.5 16 20.5 31.5 17z" fill="#84b952"/>
+  <path d="M62.5 24C67 9 81 1.5 97 2.5 95 18 80 27.5 62.5 24z" fill="#8fc45a"/>
+  <!-- leaf veins -->
+  <path d="M59 25C51 18 42 13 33 11" fill="none" stroke="#b5dd84" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M64 23C72 15 82 8 93 5" fill="none" stroke="#b5dd84" stroke-width="1.4" stroke-linecap="round"/>
+
+  <!-- cracked touchpad where the sprout breaks through -->
+  <path fill="#fff" d="M50.5 37.5l4 2.2-1.6-3.7 4.4 2.6.9-3.8 1.8 3.6 2.2-3.4.3 4 4.3-2.4-1.9 3.9 4.6-.9-3.4 3 4.2 1.6-4.4 1.3 3 3.2-4.5-.6.6 4.1-3.4-2.6-1.4 3.9-1.7-3.7-3 3 .2-4.2-4.1 1.6 2.4-3.5-4.5.1 3.6-2.6-4.3-1.9 4.3-.6z"/>
+  <!-- stem base inside the crack -->
+  <path d="M60 46.5v-6" stroke="#6fa33f" stroke-width="4.2" stroke-linecap="round"/>
+  </g>
+</svg>

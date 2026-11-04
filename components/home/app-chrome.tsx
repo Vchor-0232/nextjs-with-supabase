@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Bell, Gamepad2, Search, Sprout } from "lucide-react";
+import { Bell, Search } from "lucide-react";
+import { GamesproutMark } from "@/components/gamesprout-mark";
 import { BottomNav } from "@/components/home/bottom-nav";
 
 // The frame around every page: blue header on top, bar at the bottom, black
@@ -55,13 +56,7 @@ function AppHeader({ variant }: { variant: "app" | "public" }) {
         className="flex items-center gap-1.5 text-[15px] font-bold"
         aria-label="Gamesprout home"
       >
-        <span className="relative inline-flex pt-1.5" aria-hidden="true">
-          <Gamepad2 className="h-6 w-6 text-black" strokeWidth={2.5} />
-          <Sprout
-            className="absolute -top-1 left-1/2 h-4 w-4 -translate-x-1/2 text-[#84b952]"
-            strokeWidth={3}
-          />
-        </span>
+        <GamesproutMark className="-mt-1 w-9" />
         Gamesprout
       </Link>
       {variant === "public" ? (
