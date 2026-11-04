@@ -29,7 +29,9 @@ export function BottomNav() {
     >
       <ul className="flex items-stretch justify-between">
         {TABS.map(({ href, label, Icon }) => {
-          const active = pathname === href;
+          // Sub-pages (like Profile → Edit profile) keep their tab highlighted.
+          const active =
+            href === "/protected" ? pathname === href : pathname.startsWith(href);
           return (
             <li key={href} className="flex-1">
               <Link
@@ -37,7 +39,8 @@ export function BottomNav() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-col items-center gap-0.5 rounded-xl py-1 text-black transition hover:bg-black/10",
-                  active && "bg-black/15",
+                  // Current tab is yellow, as in the Profile design.
+                  active && "text-[#f5c518] [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]",
                 )}
               >
                 <Icon className="h-7 w-7" strokeWidth={2} />

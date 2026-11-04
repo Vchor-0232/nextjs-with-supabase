@@ -17,6 +17,7 @@ export function FriendsSection({
   friends: FriendCard[];
   count: number;
 }) {
+  // Matches the Home and Profile designs: "Friends (57)" with avatars.
   return (
     <section className="mb-4">
       <SectionHeader title={`Friends (${count})`} href="/protected/friends" />
@@ -43,7 +44,7 @@ export function FriendsSection({
   );
 }
 
-function Avatar({ friend }: { friend: FriendCard }) {
+export function Avatar({ friend }: { friend: FriendCard }) {
   const ring = "h-14 w-14 rounded-full ring-[3px] ring-[#f5c518]";
   return friend.avatarUrl ? (
     <img
@@ -93,20 +94,41 @@ function Rating({ pct }: { pct: number | null }) {
   );
 }
 
-function EmptyGames() {
+function EmptyGames({ text = "No games yet. Check back soon!" }: { text?: string }) {
   return (
     <p className={`${panel} py-6 text-center text-sm text-neutral-400`}>
-      No games yet. Check back soon!
+      {text}
     </p>
   );
 }
 
 export function RecommendedSection({ games }: { games: GameCard[] }) {
   return (
+    <GameGridSection
+      title="Recommended For You"
+      href="/protected/charts"
+      games={games}
+    />
+  );
+}
+
+// Two game cards side by side (Recommended, Favorite Games).
+export function GameGridSection({
+  title,
+  href,
+  games,
+  emptyText,
+}: {
+  title: string;
+  href?: string;
+  games: GameCard[];
+  emptyText?: string;
+}) {
+  return (
     <section className="mb-4">
-      <SectionHeader title="Recommended For You" href="/protected/charts" />
+      <SectionHeader title={title} href={href} />
       {games.length === 0 ? (
-        <EmptyGames />
+        <EmptyGames text={emptyText} />
       ) : (
         <ul className="grid grid-cols-2 gap-2">
           {games.map((g) => (
