@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import {
   ChartNoAxesColumn,
   House,
@@ -17,9 +18,24 @@ const TABS = [
   { href: "/protected/settings", label: "Settings", Icon: Settings },
 ];
 
+// Reading the page address waits for the page itself on pages like a chat,
+// so show the tab bar without a highlight until it's known.
 export function BottomNav() {
-  const pathname = usePathname();
+  return (
+    <Suspense fallback={<TabBar pathname={null} />}>
+      <CurrentTabBar />
+    </Suspense>
+  );
+}
 
+function CurrentTabBar() {
+  const pathname = usePathname();
+  // Chats use the whole screen for messages and the message box.
+  if (pathname.startsWith("/protected/messages/")) return null;
+  return <TabBar pathname={pathname} />;
+}
+
+function TabBar({ pathname }: { pathname: string | null }) {
   return (
     <nav
       aria-label="Main"
@@ -29,7 +45,8 @@ export function BottomNav() {
         {TABS.map(({ href, label, Icon }) => {
           // Sub-pages (like Profile → Edit profile) keep their tab highlighted.
           const active =
-            href === "/protected" ? pathname === href : pathname.startsWith(href);
+            pathname !== null &&
+            (href === "/protected" ? pathname === href : pathname.startsWith(href));
           return (
             <li key={href} className="flex-1">
               <Link

@@ -25,17 +25,26 @@ export function FriendsSection({
       <div className={`${panel} px-2 py-3`}>
         {friends.length === 0 ? (
           <p className="py-4 text-center text-sm text-neutral-400">
-            No friends yet. Friend requests are coming soon!
+            No friends yet.{" "}
+            <Link href="/protected/friends" className="font-semibold text-[#f5c518] underline">
+              Find friends
+            </Link>
           </p>
         ) : (
           // Padding leaves room for the yellow rings, which the scroll area would clip.
           <ul className="flex gap-3 overflow-x-auto p-1.5">
             {friends.map((f) => (
-              <li key={f.id} className="flex w-14 shrink-0 flex-col items-center">
-                <Avatar friend={f} />
-                <span className="mt-1 w-full truncate text-center text-xs font-semibold">
-                  {f.displayName ?? f.username}
-                </span>
+              <li key={f.id} className="w-14 shrink-0">
+                {/* Tap a friend to see their profile (and message them). */}
+                <Link
+                  href={`/protected/people/${f.username}`}
+                  className="flex flex-col items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <Avatar friend={f} />
+                  <span className="mt-1 w-full truncate text-center text-xs font-semibold">
+                    {f.displayName ?? f.username}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>
