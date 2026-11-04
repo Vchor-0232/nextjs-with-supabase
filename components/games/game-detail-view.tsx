@@ -1,4 +1,5 @@
-import { Heart, Star, ThumbsUp, Users } from "lucide-react";
+import type { ReactNode } from "react";
+import { FavoriteButton, GameStatsBar } from "@/components/games/game-actions";
 import {
   GameSpotlight,
   type SpotlightGame,
@@ -47,92 +48,88 @@ function toSpotlight(game: GameDetail): SpotlightGame {
   };
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Star;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl bg-neutral-900 p-3">
-      <Icon className="h-5 w-5 shrink-0 text-[#8c9bff]" aria-hidden="true" />
-      <div className="min-w-0">
-        <p className="text-xs text-neutral-400">{label}</p>
-        <p className="truncate font-bold">{value}</p>
-      </div>
-    </div>
-  );
-}
-
 function GameInfo({ game }: { game: GameDetail }) {
   const r = game.roblox;
+  const facts = [
+    r?.likePct != null && `${r.likePct}% liked on Roblox`,
+    r && `${formatCount(r.playing)} playing now`,
+    r && `${formatCount(r.favorites)} favorites`,
+  ].filter(Boolean);
+
   return (
-    <section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-3">
+    <>
+      <section className="mb-3 rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-2.5 shadow-[0_8px_18px_-12px_rgba(0,0,0,0.65)]">
+        <h2 className="mb-1 text-base font-bold">Description</h2>
+        <p className="whitespace-pre-line text-[13px] leading-relaxed text-white/90">
+          {game.description?.trim() || "No description yet."}
+        </p>
+      </section>
+
       {game.tags.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5">
+        <ul aria-label="Game categories" className="mb-3 flex flex-wrap gap-[7px] px-1">
           {game.tags.map((tag, i) => (
-            <span
+            <li
               key={tag}
-              className={`rounded-md px-2 py-0.5 text-xs font-bold ${
-                i === 0 ? "bg-[#4d62db]" : "bg-neutral-700"
+              className={`rounded-full border border-white/20 px-3.5 py-1 text-[13px] font-bold shadow-[0_4px_8px_rgba(0,0,0,0.22)] ${
+                i === 0 ? "bg-[#f5c518] text-black" : "bg-[#4d62db]"
               }`}
             >
               {tag}
-            </span>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
-        <Stat
-          icon={ThumbsUp}
-          label="Rating on Roblox"
-          value={r?.likePct != null ? `${r.likePct}% liked` : "—"}
-        />
-        <Stat
-          icon={Users}
-          label="Playing now"
-          value={r ? formatCount(r.playing) : "—"}
-        />
-        <Stat
-          icon={Heart}
-          label="Favorites"
-          value={r ? formatCount(r.favorites) : "—"}
-        />
-        <Stat
-          icon={Star}
-          label="Gamesprout rating"
-          value={
-            game.avgStars != null
-              ? `${game.avgStars.toFixed(1)} ★ (${formatCount(game.starCount)})`
-              : "No ratings yet"
-          }
-        />
-      </div>
-
-      {game.description && (
-        <p className="mt-3 whitespace-pre-line text-sm text-neutral-200">
-          {game.description}
-        </p>
-      )}
-
-      <p className="mt-3 text-xs text-neutral-500">
+      <p className="mb-3 px-1 text-xs text-neutral-400">
+        {facts.length > 0 && <>{facts.join(" · ")}. </>}
         {r
           ? `Stats from Roblox, updated ${timeAgo(r.syncedAt)}.`
           : "Roblox stats will appear after the next daily sync."}
       </p>
-    </section>
+
+      <aside className="mb-3 rounded-2xl border border-[#4d62db]/85 bg-[#4d62db]/20 px-3.5 py-2 text-center text-[13px]">
+        Remember to keep comments respectful and to follow our Community Guidelines.
+      </aside>
+    </>
   );
 }
 
-export function GameDetailView({ game }: { game: GameDetail }) {
+export function GameDetailView({
+  game,
+  comments,
+}: {
+  game: GameDetail;
+  comments?: ReactNode;
+}) {
   return (
     <>
-      <GameSpotlight game={toSpotlight(game)} />
+      <GameSpotlight
+        game={toSpotlight(game)}
+        titleAction={
+          <FavoriteButton
+            gameId={game.id}
+            userId={game.viewer.userId}
+            favorited={game.viewer.favorited}
+          />
+        }
+        statsBar={
+          <GameStatsBar
+            gameId={game.id}
+            userId={game.viewer.userId}
+            myRating={game.viewer.rating}
+            myVote={game.viewer.vote}
+            avgStars={game.avgStars}
+            starCount={game.starCount}
+            visits={game.roblox?.visits ?? null}
+            robloxLikes={game.roblox?.likes ?? null}
+            robloxDislikes={game.roblox?.dislikes ?? null}
+            gamesproutLikes={game.votes.likes}
+            gamesproutDislikes={game.votes.dislikes}
+          />
+        }
+      />
       <GameInfo game={game} />
+      {comments}
     </>
   );
 }

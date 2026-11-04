@@ -1,0 +1,254 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Heart, Star, ThumbsDown, ThumbsUp } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
+
+const compact = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+type Vote = "like" | "dislike" | null;
+
+function useToast() {
+  const [toast, setToast] = useState<{ text: string; login?: boolean } | null>(null);
+  const show = (text: string, login = false) => {
+    setToast({ text, login });
+    window.setTimeout(() => setToast(null), 2500);
+  };
+  const node = toast && (
+    <div
+      role="status"
+      className="fixed inset-x-0 bottom-24 z-30 mx-auto w-fit max-w-[90vw] rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold shadow-lg ring-1 ring-neutral-700"
+    >
+      {toast.text}
+      {toast.login && (
+        <>
+          {" "}
+          <Link href="/auth/login" className="text-[#f5c518] underline">
+            Log in
+          </Link>
+        </>
+      )}
+    </div>
+  );
+  return { show, node };
+}
+
+export function FavoriteButton({
+  gameId,
+  userId,
+  favorited: initial,
+}: {
+  gameId: string;
+  userId: string | null;
+  favorited: boolean;
+}) {
+  const [favorited, setFavorited] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const toast = useToast();
+  const router = useRouter();
+
+  const toggle = async () => {
+    if (!userId) return toast.show("Log in to save favorites.", true);
+    setBusy(true);
+    const next = !favorited;
+    setFavorited(next);
+    const supabase = createClient();
+    const { error } = next
+      ? await supabase.from("favorite_games").insert({ game_id: gameId, user_id: userId })
+      : await supabase
+          .from("favorite_games")
+          .delete()
+          .eq("game_id", gameId)
+          .eq("user_id", userId);
+    setBusy(false);
+    if (error && error.code !== "23505") {
+      setFavorited(!next);
+      return toast.show("Couldn't save that. Try again.");
+    }
+    toast.show(next ? "Added to favorites" : "Removed from favorites");
+    router.refresh();
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={toggle}
+        disabled={busy}
+        aria-pressed={favorited}
+        aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+        className="grid h-11 w-11 place-items-center rounded-full bg-neutral-900 ring-1 ring-neutral-700 transition hover:bg-neutral-800 disabled:opacity-60"
+      >
+        <Heart
+          className={cn(
+            "h-6 w-6",
+            favorited ? "fill-[#f5c518] text-[#f5c518]" : "text-white",
+          )}
+        />
+      </button>
+      {toast.node}
+    </>
+  );
+}
+
+// The blue stats strip from the design, where each part does something:
+// tap a star to rate 1–5, tap the thumbs to like or dislike.
+export function GameStatsBar({
+  gameId,
+  userId,
+  myRating: initialRating,
+  myVote: initialVote,
+  avgStars,
+  starCount,
+  visits,
+  robloxLikes,
+  robloxDislikes,
+  gamesproutLikes,
+  gamesproutDislikes,
+}: {
+  gameId: string;
+  userId: string | null;
+  myRating: number | null;
+  myVote: Vote;
+  avgStars: number | null;
+  starCount: number;
+  visits: number | null;
+  robloxLikes: number | null;
+  robloxDislikes: number | null;
+  gamesproutLikes: number;
+  gamesproutDislikes: number;
+}) {
+  const [rating, setRating] = useState(initialRating);
+  const [vote, setVote] = useState<Vote>(initialVote);
+  const [hover, setHover] = useState<number | null>(null);
+  const toast = useToast();
+  const router = useRouter();
+
+  // Everyone else's votes, so ours can be added back in as it changes.
+  const otherLikes = gamesproutLikes - (initialVote === "like" ? 1 : 0);
+  const otherDislikes = gamesproutDislikes - (initialVote === "dislike" ? 1 : 0);
+  const likes = (robloxLikes ?? 0) + otherLikes + (vote === "like" ? 1 : 0);
+  const dislikes = (robloxDislikes ?? 0) + otherDislikes + (vote === "dislike" ? 1 : 0);
+
+  // Average including our rating, updated as soon as we tap.
+  const othersTotal = (avgStars ?? 0) * starCount - (initialRating ?? 0);
+  const othersCount = starCount - (initialRating ? 1 : 0);
+  const count = othersCount + (rating ? 1 : 0);
+  const avg = count ? (othersTotal + (rating ?? 0)) / count : null;
+  const filled = hover ?? rating ?? (avg === null ? 0 : Math.round(avg));
+
+  const rate = async (score: number) => {
+    if (!userId) return toast.show("Log in to rate games.", true);
+    const previous = rating;
+    setRating(score);
+    const { error } = await createClient()
+      .from("ratings")
+      .upsert(
+        { game_id: gameId, user_id: userId, score },
+        { onConflict: "user_id,game_id" },
+      );
+    if (error) {
+      setRating(previous);
+      return toast.show("Couldn't save your rating. Try again.");
+    }
+    toast.show(`You rated it ${score} star${score === 1 ? "" : "s"}`);
+    router.refresh();
+  };
+
+  const castVote = async (next: Exclude<Vote, null>) => {
+    if (!userId) return toast.show("Log in to like or dislike games.", true);
+    const previous = vote;
+    const updated = vote === next ? null : next; // tap again to undo
+    setVote(updated);
+    const votes = createClient().from("game_votes");
+    const { error } =
+      updated === null
+        ? await votes.delete().eq("game_id", gameId).eq("user_id", userId)
+        : await votes.upsert(
+            { game_id: gameId, user_id: userId, is_like: updated === "like" },
+            { onConflict: "game_id,user_id" },
+          );
+    if (error) {
+      setVote(previous);
+      return toast.show("Couldn't save your vote. Try again.");
+    }
+    toast.show(
+      updated === "like" ? "Liked" : updated === "dislike" ? "Disliked" : "Vote removed",
+    );
+    router.refresh();
+  };
+
+  const divider = <span aria-hidden="true" className="h-6 w-px bg-white/30" />;
+  const voteButton =
+    "flex items-center gap-1 rounded-md px-1.5 py-1 transition hover:bg-white/15 aria-pressed:bg-black/30";
+
+  return (
+    <>
+      <div className="mt-2 flex items-center justify-between gap-1 rounded-2xl bg-[#4d62db] px-2 py-1.5 text-[13px] font-bold shadow-[0_6px_12px_rgba(0,0,0,0.22)]">
+        <div
+          className="flex items-center"
+          role="radiogroup"
+          aria-label={
+            avg === null
+              ? "Rate this game (no ratings yet)"
+              : `Rate this game. Average ${avg.toFixed(1)} of 5 from ${count} ratings`
+          }
+          onMouseLeave={() => setHover(null)}
+        >
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={rating === n}
+              aria-label={`${n} star${n === 1 ? "" : "s"}`}
+              onClick={() => rate(n)}
+              onMouseEnter={() => setHover(n)}
+              className="p-0.5"
+            >
+              <Star
+                className={cn(
+                  "h-[18px] w-[18px] transition",
+                  n <= filled
+                    ? "fill-[#f5c518] text-[#f5c518]"
+                    : "fill-white/20 text-white/50",
+                )}
+              />
+            </button>
+          ))}
+          <span className="ml-1 text-[#f5c518]">{count ? compact.format(count) : "—"}</span>
+        </div>
+        {divider}
+        <span>Visits: {visits === null ? "—" : compact.format(visits)}</span>
+        {divider}
+        <button
+          type="button"
+          aria-pressed={vote === "like"}
+          aria-label={`Like (${compact.format(likes)})`}
+          onClick={() => castVote("like")}
+          className={voteButton}
+        >
+          <ThumbsUp className={cn("h-4 w-4", vote === "like" && "fill-[#f5c518] text-[#f5c518]")} />
+          {compact.format(likes)}
+        </button>
+        <button
+          type="button"
+          aria-pressed={vote === "dislike"}
+          aria-label={`Dislike (${compact.format(dislikes)})`}
+          onClick={() => castVote("dislike")}
+          className={voteButton}
+        >
+          <ThumbsDown className={cn("h-4 w-4", vote === "dislike" && "fill-[#f5c518] text-[#f5c518]")} />
+          {compact.format(dislikes)}
+        </button>
+      </div>
+      {toast.node}
+    </>
+  );
+}

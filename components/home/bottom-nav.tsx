@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   ChartNoAxesColumn,
   House,
-  MessageCircle,
+  Settings,
   User,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,8 +14,7 @@ const TABS = [
   { href: "/protected", label: "Home", Icon: House },
   { href: "/protected/charts", label: "Charts", Icon: ChartNoAxesColumn },
   { href: "/protected/profile", label: "Profile", Icon: User },
-  { href: "/protected/messages", label: "Messages", Icon: MessageCircle },
-  { href: "/protected/friends", label: "Friends", Icon: Users },
+  { href: "/protected/settings", label: "Settings", Icon: Settings },
 ];
 
 export function BottomNav() {

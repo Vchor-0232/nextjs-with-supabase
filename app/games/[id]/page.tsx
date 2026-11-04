@@ -11,13 +11,12 @@ import { createClient } from "@/lib/supabase/server";
 async function GamePageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: auth }, game] = await Promise.all([
-    supabase.auth.getClaims(),
-    getGameDetail(id),
-  ]);
+  const { data: auth } = await supabase.auth.getClaims();
+  const viewerId = auth?.claims?.sub ?? null;
+  const game = await getGameDetail(id, viewerId);
   if (!game) notFound();
 
-  const loggedIn = Boolean(auth?.claims);
+  const loggedIn = viewerId !== null;
 
   return (
     <AppChrome variant={loggedIn ? "app" : "public"}>

@@ -10,6 +10,15 @@ export type GameDetail = {
   // Gamesprout's own star ratings (ratings table, via game_stats)
   avgStars: number | null;
   starCount: number;
+  // Gamesprout likes/dislikes (game_votes), added to Roblox's on the page
+  votes: { likes: number; dislikes: number };
+  // What the person viewing has done; all empty when logged out
+  viewer: {
+    userId: string | null;
+    rating: number | null; // 1–5
+    vote: "like" | "dislike" | null;
+    favorited: boolean;
+  };
   // Copied from Roblox by the daily sync; null until the first sync
   roblox: {
     visits: number;
@@ -30,7 +39,10 @@ const num = (v: unknown) => (v == null ? 0 : Number(v));
 
 // One game for its Gamesprout page. The database's rules decide whether this
 // visitor may see it (published games, or the developer's own).
-export async function getGameDetail(id: string): Promise<GameDetail | null> {
+export async function getGameDetail(
+  id: string,
+  viewerId: string | null = null,
+): Promise<GameDetail | null> {
   // Game IDs are UUIDs; anything else can't exist, so skip the lookup.
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
 
@@ -43,7 +55,18 @@ export async function getGameDetail(id: string): Promise<GameDetail | null> {
     .maybeSingle();
   if (!game) return null;
 
-  const [devRes, statsRes, tagsRes, robloxRes] = await Promise.all([
+  const none = Promise.resolve({ data: null, error: null });
+  const [
+    devRes,
+    statsRes,
+    tagsRes,
+    robloxRes,
+    likesRes,
+    dislikesRes,
+    myRatingRes,
+    myVoteRes,
+    myFavoriteRes,
+  ] = await Promise.all([
     supabase
       .from("profiles")
       .select("username, display_name")
@@ -62,6 +85,40 @@ export async function getGameDetail(id: string): Promise<GameDetail | null> {
       )
       .eq("game_id", id)
       .maybeSingle(),
+    supabase
+      .from("game_votes")
+      .select("user_id", { count: "exact", head: true })
+      .eq("game_id", id)
+      .eq("is_like", true),
+    supabase
+      .from("game_votes")
+      .select("user_id", { count: "exact", head: true })
+      .eq("game_id", id)
+      .eq("is_like", false),
+    viewerId
+      ? supabase
+          .from("ratings")
+          .select("score")
+          .eq("game_id", id)
+          .eq("user_id", viewerId)
+          .maybeSingle()
+      : none,
+    viewerId
+      ? supabase
+          .from("game_votes")
+          .select("is_like")
+          .eq("game_id", id)
+          .eq("user_id", viewerId)
+          .maybeSingle()
+      : none,
+    viewerId
+      ? supabase
+          .from("favorite_games")
+          .select("game_id")
+          .eq("game_id", id)
+          .eq("user_id", viewerId)
+          .maybeSingle()
+      : none,
   ]);
 
   const r = robloxRes.data;
@@ -92,6 +149,17 @@ export async function getGameDetail(id: string): Promise<GameDetail | null> {
         ? Number(statsRes.data.avg_rating)
         : null,
     starCount,
+    votes: { likes: likesRes.count ?? 0, dislikes: dislikesRes.count ?? 0 },
+    viewer: {
+      userId: viewerId,
+      rating: myRatingRes.data ? Number((myRatingRes.data as { score: number }).score) : null,
+      vote: myVoteRes.data
+        ? (myVoteRes.data as { is_like: boolean }).is_like
+          ? "like"
+          : "dislike"
+        : null,
+      favorited: Boolean(myFavoriteRes.data),
+    },
     roblox: hasRobloxNumbers
       ? {
           visits: num(r.visits),
