@@ -59,26 +59,38 @@ const GAMES_TO_RANK = 100;
 // Everything the Home page shows, read as the logged-in user (so the
 // database's security rules decide what they can see).
 export async function getHomeData(userId: string) {
-  const supabase = await createClient();
-
-  const [friendsRes, games] = await Promise.all([
-    supabase
-      .from("friendships")
-      .select(
-        `requester_id,
-         requester:profiles!friendships_requester_id_fkey(${PROFILE_COLUMNS}),
-         addressee:profiles!friendships_addressee_id_fkey(${PROFILE_COLUMNS})`,
-        { count: "exact" },
-      )
-      .eq("status", "accepted")
-      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-      .order("created_at", { ascending: false })
-      .limit(12),
+  const [friends, games] = await Promise.all([
+    getFriends(userId),
     getGameLists(),
   ]);
 
+  return {
+    error: friends.error ?? games.error,
+    friendCount: friends.count,
+    friends: friends.friends,
+    recommended: games.recommended,
+    popular: games.popular,
+  };
+}
+
+// The logged-in user's accepted friends (newest first) and how many there are.
+export async function getFriends(userId: string, limit = 12) {
+  const supabase = await createClient();
+  const res = await supabase
+    .from("friendships")
+    .select(
+      `requester_id,
+       requester:profiles!friendships_requester_id_fkey(${PROFILE_COLUMNS}),
+       addressee:profiles!friendships_addressee_id_fkey(${PROFILE_COLUMNS})`,
+      { count: "exact" },
+    )
+    .eq("status", "accepted")
+    .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
   const friends: FriendCard[] = (
-    (friendsRes.data ?? []) as unknown as {
+    (res.data ?? []) as unknown as {
       requester_id: string;
       requester: ProfileRow;
       addressee: ProfileRow;
@@ -94,27 +106,16 @@ export async function getHomeData(userId: string) {
   });
 
   return {
-    error: friendsRes.error?.message ?? games.error,
-    friendCount: friendsRes.count ?? friends.length,
+    error: res.error?.message ?? null,
+    count: res.count ?? friends.length,
     friends,
-    recommended: games.recommended,
-    popular: games.popular,
   };
 }
 
-// Recommended and Popular Now. Also used by the public home page, so it
-// only reads what logged-out visitors are allowed to see.
-export async function getGameLists() {
-  const supabase = await createClient();
+type Supabase = Awaited<ReturnType<typeof createClient>>;
 
-  const gamesRes = await supabase
-    .from("games")
-    .select("id, title, thumbnail_url, roblox_url, created_at")
-    .eq("is_published", true)
-    .order("created_at", { ascending: false })
-    .limit(GAMES_TO_RANK);
-
-  const games = (gamesRes.data ?? []) as GameRow[];
+// Turns game rows into cards with tags, ratings and visit counts.
+async function buildGameCards(supabase: Supabase, games: GameRow[]) {
   const ids = games.map((g) => g.id);
 
   const [statsRes, tagsRes, robloxRes] = ids.length
@@ -184,6 +185,44 @@ export async function getGameLists() {
     };
   });
 
+  // roblox_stats is optional: the page still works before the sync has run.
+  if (robloxRes?.error) {
+    console.error("roblox_stats failed to load:", robloxRes.error.message);
+  }
+
+  return { cards, error: statsRes?.error ?? tagsRes?.error ?? null };
+}
+
+type RankedCard = Awaited<ReturnType<typeof buildGameCards>>["cards"][number];
+
+const toCard = (c: RankedCard): GameCard => ({
+  id: c.id,
+  title: c.title,
+  thumbnailUrl: c.thumbnailUrl,
+  robloxUrl: c.robloxUrl,
+  views: c.views,
+  viewsLabel: c.viewsLabel,
+  ratingPct: c.ratingPct,
+  tags: c.tags,
+});
+
+// Recommended and Popular Now. Also used by the public home page, so it
+// only reads what logged-out visitors are allowed to see.
+export async function getGameLists() {
+  const supabase = await createClient();
+
+  const gamesRes = await supabase
+    .from("games")
+    .select("id, title, thumbnail_url, roblox_url, created_at")
+    .eq("is_published", true)
+    .order("created_at", { ascending: false })
+    .limit(GAMES_TO_RANK);
+
+  const { cards, error: cardsError } = await buildGameCards(
+    supabase,
+    (gamesRes.data ?? []) as GameRow[],
+  );
+
   // "Recommended" is the best-rated games for now (newest first when tied
   // or unrated). It becomes personal once Interests is built.
   const recommended = [...cards]
@@ -201,22 +240,7 @@ export async function getGameLists() {
     )
     .slice(0, 3);
 
-  const toCard = (c: (typeof cards)[number]): GameCard => ({
-    id: c.id,
-    title: c.title,
-    thumbnailUrl: c.thumbnailUrl,
-    robloxUrl: c.robloxUrl,
-    views: c.views,
-    viewsLabel: c.viewsLabel,
-    ratingPct: c.ratingPct,
-    tags: c.tags,
-  });
-
-  // roblox_stats is optional: the page still works before the sync has run.
-  const error = gamesRes.error ?? statsRes?.error ?? tagsRes?.error;
-  if (robloxRes?.error) {
-    console.error("roblox_stats failed to load:", robloxRes.error.message);
-  }
+  const error = gamesRes.error ?? cardsError;
 
   return {
     error: error?.message ?? null,
@@ -225,20 +249,123 @@ export async function getGameLists() {
   };
 }
 
+export type MyProfile = {
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  roblox_username: string | null;
+  created_at: string | null;
+};
+
 export async function getMyProfile(userId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("username, display_name, avatar_url, bio, roblox_username")
+    .select("username, display_name, avatar_url, bio, roblox_username, created_at")
     .eq("id", userId)
     .maybeSingle();
-  return data as {
-    username: string;
-    display_name: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-    roblox_username: string | null;
-  } | null;
+  return data as MyProfile | null;
+}
+
+export type Badge = {
+  id: string;
+  name: string;
+  howToEarn: string;
+  earned: boolean;
+};
+
+// Badges are worked out from what users have done, so there's no badges
+// table to keep in sync. Add more here as features ship.
+function computeBadges(input: {
+  joinedAt: string | null;
+  friendCount: number;
+  gameViews: number;
+}): Badge[] {
+  return [
+    {
+      id: "early-sprout",
+      name: "Early Sprout",
+      howToEarn: "Joined Gamesprout in 2026",
+      earned: input.joinedAt !== null && input.joinedAt < "2027-01-01",
+    },
+    {
+      id: "team-player",
+      name: "Team Player",
+      howToEarn: "Make your first friend",
+      earned: input.friendCount >= 1,
+    },
+    {
+      id: "explorer",
+      name: "Explorer",
+      howToEarn: "Check out 10 games",
+      earned: input.gameViews >= 10,
+    },
+  ];
+}
+
+// Everything the Profile tab shows for the logged-in user.
+export async function getProfilePage(userId: string) {
+  const supabase = await createClient();
+
+  const [profile, friends, followersRes, followingRes, favoritesRes, viewsRes] =
+    await Promise.all([
+      getMyProfile(userId),
+      getFriends(userId, 8),
+      supabase
+        .from("follows")
+        .select("follower_id", { count: "exact", head: true })
+        .eq("following_id", userId),
+      supabase
+        .from("follows")
+        .select("following_id", { count: "exact", head: true })
+        .eq("follower_id", userId),
+      supabase
+        .from("favorite_games")
+        .select(
+          "created_at, games(id, title, thumbnail_url, roblox_url, created_at, is_published)",
+          { count: "exact" },
+        )
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(2),
+      supabase
+        .from("game_views")
+        .select("id", { count: "exact", head: true })
+        .eq("viewer_id", userId),
+    ]);
+
+  const favoriteRows = ((favoritesRes.data ?? []) as unknown as {
+    games: (GameRow & { is_published: boolean }) | null;
+  }[])
+    .map((r) => r.games)
+    .filter((g): g is GameRow & { is_published: boolean } => !!g?.is_published);
+
+  const { cards: favoriteCards } = await buildGameCards(supabase, favoriteRows);
+
+  const error =
+    friends.error ??
+    followersRes.error?.message ??
+    followingRes.error?.message ??
+    favoritesRes.error?.message ??
+    null;
+
+  return {
+    error,
+    profile,
+    friendCount: friends.count,
+    friends: friends.friends,
+    followers: followersRes.count ?? 0,
+    following: followingRes.count ?? 0,
+    favoriteCount: favoritesRes.count ?? favoriteCards.length,
+    favorites: favoriteCards.map(toCard),
+    badges: computeBadges({
+      joinedAt: profile?.created_at ?? null,
+      friendCount: friends.count,
+      // game_views may not be readable; then Explorer just stays locked.
+      gameViews: viewsRes.error ? 0 : (viewsRes.count ?? 0),
+    }),
+  };
 }
 
 export function formatCount(count: number) {
