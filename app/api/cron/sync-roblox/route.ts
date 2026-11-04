@@ -1,9 +1,12 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { fetchRobloxGames, placeIdFromUrl } from "@/lib/roblox";
+import { importTopRobloxGames } from "@/lib/roblox-import";
 
-// Copies visits, likes, players, icons and screenshots from Roblox into the
-// roblox_stats table. Vercel calls this once a day (see vercel.json) and
-// sends the CRON_SECRET, so nobody else can trigger it.
+// 1. Imports Roblox's top games that aren't on Gamesprout yet.
+// 2. Copies visits, likes, players, icons and screenshots for every
+//    published game into the roblox_stats table.
+// Vercel calls this once a day (see vercel.json) and sends the CRON_SECRET,
+// so nobody else can trigger it.
 export const maxDuration = 60;
 
 export async function GET(request: Request) {
@@ -23,6 +26,14 @@ export async function GET(request: Request) {
     secretKey,
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
+
+  // An import problem shouldn't stop the stats sync, so catch it here.
+  let importResult: unknown;
+  try {
+    importResult = await importTopRobloxGames(supabase);
+  } catch (e) {
+    importResult = { imported: 0, error: e instanceof Error ? e.message : String(e) };
+  }
 
   const [gamesRes, existingRes] = await Promise.all([
     supabase.from("games").select("id, roblox_url").eq("is_published", true),
@@ -68,6 +79,7 @@ export async function GET(request: Request) {
         place_id: i.placeId,
         universe_id: i.universeId,
         name: i.name,
+        description: i.description,
         creator_name: i.creatorName,
         visits: i.visits,
         playing: i.playing,
@@ -110,6 +122,7 @@ export async function GET(request: Request) {
   }
 
   return Response.json({
+    import: importResult,
     games: games.length,
     synced: okRows.length,
     failed: errorRows.map((r) => ({ gameId: r.game_id, error: r.sync_error })),

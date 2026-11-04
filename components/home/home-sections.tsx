@@ -154,14 +154,16 @@ export function GameGridSection({
 
 export function PopularSection({
   games,
+  title = "Popular Now",
   seeAllHref = "/protected/charts",
 }: {
   games: GameCard[];
-  seeAllHref?: string;
+  title?: string;
+  seeAllHref?: string | null; // null hides "See All"
 }) {
   return (
     <section className="mb-4">
-      <SectionHeader title="Popular Now" href={seeAllHref} />
+      <SectionHeader title={title} href={seeAllHref ?? undefined} />
       {games.length === 0 ? (
         <EmptyGames />
       ) : (
