@@ -5,7 +5,6 @@ import {
   FriendsSection,
   GameGridSection,
 } from "@/components/home/home-sections";
-import { GamesproutLogoutButton } from "@/components/home/logout-button";
 import { BadgesSection, ProfileCard } from "@/components/profile/profile-sections";
 import { getProfilePage } from "@/lib/home-data";
 import { createClient } from "@/lib/supabase/server";
@@ -40,9 +39,6 @@ async function ProfileContent() {
         emptyText="No favorite games yet."
       />
       <BadgesSection badges={page.badges} />
-      <div className="mt-6">
-        <GamesproutLogoutButton />
-      </div>
     </>
   );
 }

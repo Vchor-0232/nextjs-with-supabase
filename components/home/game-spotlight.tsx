@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element -- slide images can come from any host */
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -60,20 +60,47 @@ const compact = new Intl.NumberFormat("en-US", {
 });
 const show = (n: number | null) => (n === null ? "—" : compact.format(n));
 
-export function GameSpotlight({ game }: { game: SpotlightGame }) {
+const AUTO_ADVANCE_MS = 5000;
+
+export function GameSpotlight({
+  game,
+  titleAction,
+  statsBar,
+}: {
+  game: SpotlightGame;
+  titleAction?: ReactNode; // e.g. a favorite button next to the title
+  statsBar?: ReactNode; // replaces the read-only stats bar
+}) {
   const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
   const count = game.slides.length;
   const slide = game.slides[index];
   const go = (step: number) => setIndex((i) => (i + step + count) % count);
 
+  // Move to the next image every 5 seconds, like the design. Pauses while
+  // the pointer or keyboard focus is on the images, and for people who've
+  // asked their device to reduce motion.
+  useEffect(() => {
+    if (paused || count < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(
+      () => setIndex((i) => (i + 1) % count),
+      AUTO_ADVANCE_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, [paused, count]);
+
   return (
-    <section aria-labelledby="spotlight-title" className="mb-5">
-      <h1
-        id="spotlight-title"
-        className="px-1 text-[2.6rem] font-extrabold leading-tight tracking-tight [text-shadow:0_0_14px_rgba(255,236,160,0.85),0_0_3px_rgba(255,255,255,0.9)]"
-      >
-        {game.title}
-      </h1>
+    <section aria-labelledby="spotlight-title" className="mb-4">
+      <div className="flex items-start justify-between gap-2 px-1">
+        <h1
+          id="spotlight-title"
+          className="min-w-0 break-words text-[2.6rem] font-extrabold leading-tight tracking-tight [text-shadow:0_0_10px_#f5c518,2px_2px_0_#4d62db]"
+        >
+          {game.title}
+        </h1>
+        {titleAction && <div className="mt-2 shrink-0">{titleAction}</div>}
+      </div>
       <p className="mb-2 px-1 text-[15px] font-semibold text-neutral-200">
         {game.subtitle ?? `Made by ${game.developer}`}
       </p>
@@ -83,6 +110,10 @@ export function GameSpotlight({ game }: { game: SpotlightGame }) {
         aria-roledescription="carousel"
         aria-label={`${game.title} images`}
         className="relative overflow-hidden rounded-2xl border border-neutral-800"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onFocus={() => setPaused(true)}
+        onBlur={() => setPaused(false)}
         onKeyDown={(e) => {
           if (e.key === "ArrowLeft") go(-1);
           if (e.key === "ArrowRight") go(1);
@@ -159,7 +190,7 @@ export function GameSpotlight({ game }: { game: SpotlightGame }) {
         )}
       </div>
 
-      <StatsBar stats={game.stats} />
+      {statsBar ?? <StatsBar stats={game.stats} />}
     </section>
   );
 }
