@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Gamepad2, Sprout } from "lucide-react";
+import { GamesproutMark } from "@/components/gamesprout-mark";
 import { cn } from "@/lib/utils";
 
 // Gamesprout style tile (from the Figma login screen).
@@ -20,15 +20,7 @@ export function GamesproutLogo() {
   return (
     <h1 className="mb-8 flex items-center gap-2 text-[2.5rem] font-bold leading-none tracking-tight text-black">
       Gamesprout
-      {/* Approximation of the gamepad-and-sprout mark. Swap in the real
-          logo file from Figma (e.g. /public/logo.svg) when it's exported. */}
-      <span className="relative inline-flex pt-3" aria-hidden="true">
-        <Gamepad2 className="h-11 w-11" strokeWidth={2.5} />
-        <Sprout
-          className="absolute -top-2 left-1/2 h-7 w-7 -translate-x-1/2 text-[#84b952]"
-          strokeWidth={2.75}
-        />
-      </span>
+      <GamesproutMark className="-mt-3 w-16 shrink-0" />
     </h1>
   );
 }
