@@ -173,7 +173,8 @@ export function PopularSection({
                   <Rating pct={g.ratingPct} />
                 </div>
                 <span className="shrink-0 self-start pt-1 text-xs text-neutral-300">
-                  {formatCount(g.views)} {g.views === 1 ? "View" : "Views"}
+                  {formatCount(g.views)}{" "}
+                  {g.views === 1 ? g.viewsLabel.slice(0, -1) : g.viewsLabel}
                 </span>
               </a>
             </li>

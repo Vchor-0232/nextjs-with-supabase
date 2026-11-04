@@ -13,6 +13,7 @@ export type GameCard = {
   thumbnailUrl: string | null;
   robloxUrl: string;
   views: number;
+  viewsLabel: "Visits" | "Views"; // Roblox visits, or views on Gamesprout
   ratingPct: number | null;
   tags: string[];
 };
@@ -31,6 +32,15 @@ type GameRow = {
   thumbnail_url: string | null;
   roblox_url: string;
   created_at: string;
+};
+
+// Copied from Roblox by the daily sync (see app/api/cron/sync-roblox).
+type RobloxStatsRow = {
+  game_id: string;
+  visits: number | string | null;
+  up_votes: number | string | null;
+  down_votes: number | string | null;
+  icon_url: string | null;
 };
 
 type GameStatsRow = {
@@ -107,7 +117,7 @@ export async function getGameLists() {
   const games = (gamesRes.data ?? []) as GameRow[];
   const ids = games.map((g) => g.id);
 
-  const [statsRes, tagsRes] = ids.length
+  const [statsRes, tagsRes, robloxRes] = ids.length
     ? await Promise.all([
         supabase
           .from("game_stats")
@@ -117,8 +127,16 @@ export async function getGameLists() {
           .from("game_tags")
           .select("game_id, tags(name)")
           .in("game_id", ids),
+        supabase
+          .from("roblox_stats")
+          .select("game_id, visits, up_votes, down_votes, icon_url")
+          .in("game_id", ids),
       ])
-    : [null, null];
+    : [null, null, null];
+
+  const robloxByGame = new Map(
+    ((robloxRes?.data ?? []) as RobloxStatsRow[]).map((r) => [r.game_id, r]),
+  );
 
   const statsByGame = new Map(
     ((statsRes?.data ?? []) as GameStatsRow[]).map((s) => [s.game_id, s]),
@@ -138,18 +156,29 @@ export async function getGameLists() {
 
   const cards = games.map((g) => {
     const stats = statsByGame.get(g.id);
-    const ratingCount = Number(stats?.rating_count ?? 0);
+    const roblox = robloxByGame.get(g.id);
+
+    // Prefer Roblox's numbers once the sync has them.
+    const robloxVisits = roblox?.visits == null ? null : Number(roblox.visits);
+    const up = Number(roblox?.up_votes ?? 0);
+    const down = Number(roblox?.down_votes ?? 0);
+    const robloxLikePct = up + down > 0 ? Math.round((100 * up) / (up + down)) : null;
+
+    // Otherwise Gamesprout's own stars, shown as a percentage: 4.35 of 5 = 87%.
+    const starCount = Number(stats?.rating_count ?? 0);
     const avg = stats?.avg_rating == null ? null : Number(stats.avg_rating);
+    const starPct =
+      avg === null || starCount === 0 ? null : Math.round((avg / 5) * 100);
+
     return {
       id: g.id,
       title: g.title,
-      thumbnailUrl: g.thumbnail_url,
+      thumbnailUrl: g.thumbnail_url ?? roblox?.icon_url ?? null,
       robloxUrl: g.roblox_url,
-      views: Number(stats?.view_count ?? 0),
-      // Stars shown as a percentage, like the design: 4.35 of 5 = 87%.
-      ratingPct:
-        avg === null || ratingCount === 0 ? null : Math.round((avg / 5) * 100),
-      ratingCount,
+      views: robloxVisits ?? Number(stats?.view_count ?? 0),
+      viewsLabel: (robloxVisits === null ? "Views" : "Visits") as GameCard["viewsLabel"],
+      ratingPct: robloxLikePct ?? starPct,
+      ratingCount: robloxLikePct !== null ? up + down : starCount,
       tags: tagsByGame.get(g.id) ?? [],
       createdAt: g.created_at,
     };
@@ -178,11 +207,16 @@ export async function getGameLists() {
     thumbnailUrl: c.thumbnailUrl,
     robloxUrl: c.robloxUrl,
     views: c.views,
+    viewsLabel: c.viewsLabel,
     ratingPct: c.ratingPct,
     tags: c.tags,
   });
 
+  // roblox_stats is optional: the page still works before the sync has run.
   const error = gamesRes.error ?? statsRes?.error ?? tagsRes?.error;
+  if (robloxRes?.error) {
+    console.error("roblox_stats failed to load:", robloxRes.error.message);
+  }
 
   return {
     error: error?.message ?? null,
