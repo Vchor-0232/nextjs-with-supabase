@@ -205,65 +205,123 @@ type GameDetail = {
   updated?: string;
 };
 
-// --- Importing Roblox's top games ------------------------------------------
+// --- Finding small Roblox games to import ------------------------------------
 
-export type TopRobloxGame = {
+export type SmallRobloxGame = {
   universeId: number;
   placeId: number;
   name: string;
+  visits: number;
+  playing: number;
   genre: string | null;
-  list: string;
+  keyword: string;
 };
 
-type ExploreGame = {
+type SearchGame = {
   universeId: number;
   rootPlaceId: number;
   name: string;
+  playerCount?: number;
+  totalUpVotes?: number;
+  totalDownVotes?: number;
   isSponsored?: boolean;
   contentMaturity?: string;
-  genreL1?: string;
 };
 
 // Many Gamesprout users are kids, so only import games Roblox rates
 // "Minimal" or "Mild". Sponsored (paid) placements are skipped too.
 const ALLOWED_MATURITY = new Set(["minimal", "mild"]);
 
-/**
- * Games from Roblox's discovery lists (the ones on roblox.com/charts),
- * e.g. "top-playing-now" or "up-and-coming". Takes the first `perList`
- * allowed games from each list, without duplicates.
- */
-export async function fetchTopRobloxGames(
-  lists: string[],
-  perList: number,
-): Promise<TopRobloxGame[]> {
-  const data = await getJson<{
-    sorts: { sortId: string; contentType?: string; games?: ExploreGame[] }[];
-  }>(
-    `https://apis.roblox.com/explore-api/v1/get-sorts?sessionId=${crypto.randomUUID()}&device=computer&country=all`,
-  );
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  const seen = new Set<number>();
-  const out: TopRobloxGame[] = [];
-  for (const listId of lists) {
-    const sort = data.sorts.find((s) => s.sortId === listId);
-    if (!sort?.games) continue;
-    let taken = 0;
-    for (const g of sort.games) {
-      if (taken >= perList) break;
-      if (g.isSponsored) continue;
-      if (!ALLOWED_MATURITY.has((g.contentMaturity ?? "").toLowerCase())) continue;
-      if (!g.rootPlaceId || seen.has(g.rootPlaceId)) continue;
-      seen.add(g.rootPlaceId);
-      out.push({
+/**
+ * Searches Roblox (the same search as roblox.com) for each keyword and keeps
+ * games with fewer than `maxVisits` total visits. Roblox's charts only list
+ * huge games, so search is the way to find small ones.
+ *
+ * To skip empty or broken games, a game also needs at least `minVotes`
+ * thumbs-up and at least 60% thumbs-up overall.
+ */
+export async function searchSmallRobloxGames({
+  keywords,
+  maxVisits,
+  minVotes = 10,
+  pagesPerKeyword = 2,
+  deadline,
+}: {
+  keywords: string[];
+  maxVisits: number;
+  minVotes?: number;
+  pagesPerKeyword?: number;
+  deadline: number; // Date.now() value to stop searching at
+}): Promise<{ games: SmallRobloxGame[]; searched: string[]; errors: string[] }> {
+  const sessionId = crypto.randomUUID();
+  const candidates = new Map<number, SearchGame & { keyword: string }>();
+  const searched: string[] = [];
+  const errors: string[] = [];
+
+  for (const keyword of keywords) {
+    if (Date.now() > deadline) break;
+    let pageToken = "";
+    for (let page = 0; page < pagesPerKeyword; page++) {
+      const url =
+        `https://apis.roblox.com/search-api/omni-search?searchQuery=${encodeURIComponent(keyword)}` +
+        `&sessionId=${sessionId}&pageType=all` +
+        (pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : "");
+      let data: {
+        searchResults?: { contentGroupType?: string; contents?: SearchGame[] }[];
+        nextPageToken?: string;
+      } | null = null;
+      // Search is rate limited. Wait and retry a couple of times, then
+      // move on with whatever we've found so far.
+      for (let attempt = 0; attempt < 3 && !data && Date.now() < deadline; attempt++) {
+        try {
+          data = await getJson(url);
+        } catch (e) {
+          errors.push(`${keyword}: ${e instanceof Error ? e.message : String(e)}`);
+          await sleep(5000);
+        }
+      }
+      if (!data) break;
+      for (const group of data.searchResults ?? []) {
+        if (group.contentGroupType !== "Game") continue;
+        for (const g of group.contents ?? []) {
+          const up = g.totalUpVotes ?? 0;
+          const down = g.totalDownVotes ?? 0;
+          if (g.isSponsored || !g.rootPlaceId || candidates.has(g.rootPlaceId)) continue;
+          if (!ALLOWED_MATURITY.has((g.contentMaturity ?? "").toLowerCase())) continue;
+          if (up < minVotes || up / (up + down) < 0.6) continue;
+          candidates.set(g.rootPlaceId, { ...g, keyword });
+        }
+      }
+      pageToken = data.nextPageToken ?? "";
+      await sleep(1200); // search is rate limited; go slowly
+      if (!pageToken) break;
+    }
+    searched.push(keyword);
+  }
+
+  // Search results don't include visits or genre, so look those up.
+  const games: SmallRobloxGame[] = [];
+  for (const group of chunk([...candidates.values()], BATCH)) {
+    const details = await getJson<{ data: (GameDetail & { genre_l1?: string; genre?: string })[] }>(
+      `https://games.roblox.com/v1/games?universeIds=${group.map((g) => g.universeId).join(",")}`,
+    );
+    const byUniverse = new Map(details.data.map((d) => [d.id, d]));
+    for (const g of group) {
+      const d = byUniverse.get(g.universeId);
+      if (!d || (d.visits ?? Infinity) >= maxVisits) continue;
+      const genre = d.genre_l1 || (d.genre && d.genre !== "All" ? d.genre : null);
+      games.push({
         universeId: g.universeId,
         placeId: g.rootPlaceId,
         name: g.name,
-        genre: g.genreL1 ?? null,
-        list: listId,
+        visits: d.visits ?? 0,
+        playing: d.playing ?? g.playerCount ?? 0,
+        genre: genre ?? null,
+        keyword: g.keyword,
       });
-      taken++;
     }
   }
-  return out;
+  return { games, searched, errors };
 }
