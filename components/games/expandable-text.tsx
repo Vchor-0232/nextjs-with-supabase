@@ -24,7 +24,7 @@ export function ExpandableText({ text, className }: { text: string; className?: 
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className="mt-1 text-[13px] font-bold text-[#f5c518] hover:underline"
+          className="mt-1 text-[13px] font-bold text-[#ffcc00] hover:underline"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

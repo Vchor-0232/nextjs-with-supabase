@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Gamepad2,
-  Star,
   ThumbsDown,
   ThumbsUp,
 } from "lucide-react";
@@ -91,17 +90,17 @@ export function GameSpotlight({
   }, [paused, count]);
 
   return (
-    <section aria-labelledby="spotlight-title" className="mb-4">
-      <div className="flex items-start justify-between gap-2 px-1">
+    <section aria-labelledby="spotlight-title" className="mb-1.5">
+      <div className="flex items-start justify-between gap-2">
         <h1
           id="spotlight-title"
-          className="min-w-0 break-words text-[2.6rem] font-extrabold leading-tight tracking-tight [text-shadow:0_0_10px_#f5c518,2px_2px_0_#4d62db]"
+          className="min-w-0 break-words text-[40px] font-extrabold leading-[44px] tracking-[-1.5px] [text-shadow:0_0_10px_#ffcc00,2px_2px_0_#4d62db]"
         >
           {game.title}
         </h1>
-        {titleAction && <div className="mt-2 shrink-0">{titleAction}</div>}
+        {titleAction && <div className="mt-1 shrink-0">{titleAction}</div>}
       </div>
-      <p className="mb-2 px-1 text-[15px] font-semibold text-neutral-200">
+      <p className="mb-1.5 truncate text-base leading-5">
         {game.subtitle ?? `Made by ${game.developer}`}
       </p>
 
@@ -109,7 +108,7 @@ export function GameSpotlight({
         role="region"
         aria-roledescription="carousel"
         aria-label={`${game.title} images`}
-        className="relative overflow-hidden rounded-2xl border border-neutral-800"
+        className="relative h-[215px] overflow-hidden rounded-[16px] border border-white/[0.18] bg-black shadow-[0_12px_24px_-10px_rgba(0,0,0,0.65)]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}
@@ -122,14 +121,10 @@ export function GameSpotlight({
         <div
           aria-roledescription="slide"
           aria-label={`${index + 1} of ${count}`}
-          className="relative aspect-[16/10] w-full"
+          className="absolute inset-0"
         >
           {slide.imageUrl ? (
-            <img
-              src={slide.imageUrl}
-              alt={slide.caption}
-              className="h-full w-full object-cover"
-            />
+            <img src={slide.imageUrl} alt={slide.caption} className="h-full w-full object-cover" />
           ) : (
             <div
               aria-hidden="true"
@@ -145,33 +140,34 @@ export function GameSpotlight({
               <Gamepad2 className="h-20 w-20 text-white/25" strokeWidth={1.5} />
             </div>
           )}
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pb-8 pt-10 text-right">
-            <p className="text-sm font-semibold tracking-[0.2em] text-[#f5c518]">
-              {slide.label}
-            </p>
-            <p className="text-lg font-bold">{slide.caption}</p>
+          <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-black/[0.26] to-transparent to-45%" />
+          {/* Caption, bottom right, as in the design. */}
+          <div className="absolute bottom-[29px] right-3 flex flex-col items-end text-[13px] [text-shadow:0_1px_5px_#000]">
+            <span className="tracking-[0.14em] text-[#ffcc00]">{slide.label}</span>
+            <strong className="font-bold">{slide.caption}</strong>
           </div>
         </div>
 
         {count > 1 && (
           <>
+            {/* Arrows are tabs attached to the edges of the image. */}
             <button
               type="button"
               onClick={() => go(-1)}
               aria-label="Previous image"
-              className="absolute left-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg bg-black/80 transition hover:bg-black"
+              className="absolute left-0 top-1/2 grid h-[46px] w-[34px] -translate-y-1/2 place-items-center rounded-r-[16px] border border-white/20 bg-black/65 transition hover:bg-[#4d62db]/85"
             >
-              <ChevronLeft className="h-6 w-6" strokeWidth={3} />
+              <ChevronLeft className="h-5 w-5" strokeWidth={3} />
             </button>
             <button
               type="button"
               onClick={() => go(1)}
               aria-label="Next image"
-              className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg bg-black/80 transition hover:bg-black"
+              className="absolute right-0 top-1/2 grid h-[46px] w-[34px] -translate-y-1/2 place-items-center rounded-l-[16px] border border-white/20 bg-black/65 transition hover:bg-[#4d62db]/85"
             >
-              <ChevronRight className="h-6 w-6" strokeWidth={3} />
+              <ChevronRight className="h-5 w-5" strokeWidth={3} />
             </button>
-            <div className="absolute inset-x-0 bottom-2.5 flex justify-center gap-1.5">
+            <div className="absolute bottom-2.5 left-1/2 flex -translate-x-1/2 gap-1.5">
               {game.slides.map((s, i) => (
                 <button
                   key={s.label + i}
@@ -180,8 +176,8 @@ export function GameSpotlight({
                   aria-label={`Show image ${i + 1}`}
                   aria-current={i === index}
                   className={cn(
-                    "h-1.5 rounded-full transition-all",
-                    i === index ? "w-7 bg-[#f5c518]" : "w-5 bg-neutral-400/80",
+                    "h-[5px] rounded-full transition-all",
+                    i === index ? "w-[30px] bg-[#ffcc00]" : "w-5 bg-white/50",
                   )}
                 />
               ))}
@@ -195,44 +191,55 @@ export function GameSpotlight({
   );
 }
 
+// The blue stats strip (stars | visits | likes | dislikes), shared with the
+// interactive version on game pages.
+export const STATS_STRIP =
+  "mt-1.5 grid h-10 grid-cols-[1.35fr_0.95fr_1fr_0.75fr] items-center overflow-hidden whitespace-nowrap rounded-[16px] bg-[#4d62db] px-2 text-[13px] shadow-[0_6px_12px_rgba(0,0,0,0.22)]";
+export const STATS_CELL =
+  "flex h-[26px] min-w-0 items-center justify-center gap-0.5 border-l border-white/30";
+
+// The design's yellow star (public/icons/star.svg). Unlit stars are dimmed.
+export function DesignStar({ lit }: { lit: boolean }) {
+  return (
+    <img
+      src="/icons/star.svg"
+      alt=""
+      width={18}
+      height={23}
+      className={cn(
+        "relative -top-px h-[23px] w-[18px] transition-transform",
+        !lit && "opacity-35 grayscale",
+      )}
+    />
+  );
+}
+
 function StatsBar({ stats }: { stats: SpotlightStats }) {
   const filled = stats.avgRating === null ? 0 : Math.round(stats.avgRating);
-  const divider = <span aria-hidden="true" className="h-5 w-px bg-white/40" />;
 
   return (
-    <div className="mt-2 flex items-center justify-between gap-1.5 rounded-xl bg-[#4d62db] px-3 py-2 text-[13px] font-bold shadow-[0_3px_8px_rgba(0,0,0,0.45)]">
+    <div className={STATS_STRIP}>
       <span
-        className="flex items-center gap-1.5"
+        className="flex min-w-0 items-center"
         aria-label={
           stats.avgRating === null
             ? "No ratings yet"
             : `${stats.avgRating.toFixed(1)} out of 5 stars from ${show(stats.ratingCount)} ratings`
         }
       >
-        <span className="flex" aria-hidden="true">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <Star
-              key={n}
-              className={cn(
-                "h-4 w-4",
-                n <= filled
-                  ? "fill-[#f5c518] text-[#f5c518]"
-                  : "fill-white/20 text-white/40",
-              )}
-            />
-          ))}
-        </span>
-        <span aria-hidden="true">{show(stats.ratingCount)}</span>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <DesignStar key={n} lit={n <= filled} />
+        ))}
+        <span aria-hidden="true" className="ml-1 text-[#ffcc00]">{show(stats.ratingCount)}</span>
       </span>
-      {divider}
-      <span>Visits: {show(stats.visits)}</span>
-      {divider}
-      <span className="flex items-center gap-1" aria-label={`Likes: ${show(stats.likes)}`}>
-        <ThumbsUp className="h-4 w-4" aria-hidden="true" /> {show(stats.likes)}
+      <span className={STATS_CELL}>Visits: {show(stats.visits)}</span>
+      <span className={STATS_CELL} aria-label={`Likes: ${show(stats.likes)}`}>
+        <ThumbsUp className="h-[15px] w-[15px] shrink-0 text-[#d9d9d9]" strokeWidth={1.6} aria-hidden="true" />
+        Likes: {show(stats.likes)}
       </span>
-      {divider}
-      <span className="flex items-center gap-1" aria-label={`Dislikes: ${show(stats.dislikes)}`}>
-        <ThumbsDown className="h-4 w-4" aria-hidden="true" /> {show(stats.dislikes)}
+      <span className={STATS_CELL} aria-label={`Dislikes: ${show(stats.dislikes)}`}>
+        <ThumbsDown className="h-[15px] w-[15px] shrink-0 text-[#d9d9d9]" strokeWidth={1.6} aria-hidden="true" />
+        {show(stats.dislikes)}
       </span>
     </div>
   );

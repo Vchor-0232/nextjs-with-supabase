@@ -4,6 +4,7 @@ import {
   AuthButton,
   AuthDivider,
   AuthMessage,
+  AuthPrompt,
   PillInput,
 } from "@/components/auth/auth-ui";
 import { SocialLogin } from "@/components/auth/social-login";
@@ -82,8 +83,8 @@ export function SignUpForm() {
   };
 
   return (
-    <div className="flex w-full flex-col items-center">
-      <form onSubmit={handleSignUp} className="flex w-full flex-col gap-5">
+    <div className="flex w-full flex-col">
+      <form onSubmit={handleSignUp} className="flex w-full flex-col gap-3.5">
         <PillInput
           placeholder="Username"
           autoComplete="username"
@@ -121,7 +122,7 @@ export function SignUpForm() {
           onChange={(e) => setRepeatPassword(e.target.value)}
         />
         {error && <AuthMessage>{error}</AuthMessage>}
-        <AuthButton type="submit" disabled={isLoading} className="mt-1">
+        <AuthButton type="submit" disabled={isLoading} className="mt-3">
           {isLoading ? "Creating your account..." : "Sign up"}
         </AuthButton>
       </form>
@@ -129,15 +130,9 @@ export function SignUpForm() {
       <AuthDivider />
       <SocialLogin />
 
-      <p className="mt-10 text-sm font-semibold">
-        Already have an account?{" "}
-        <Link
-          href="/auth/login"
-          className="font-bold text-black underline underline-offset-4"
-        >
-          Log in
-        </Link>
-      </p>
+      <AuthPrompt>
+        Already have an account? <Link href="/auth/login">Log in</Link>
+      </AuthPrompt>
     </div>
   );
 }

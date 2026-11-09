@@ -22,7 +22,7 @@ async function ChatContent({ params }: { params: Promise<{ username: string }> }
         <p className="font-bold">You can only chat with friends.</p>
         <Link
           href={`/protected/people/${chat.person.username}`}
-          className="mt-4 inline-flex h-10 items-center rounded-full bg-[#f5c518] px-5 font-bold text-black"
+          className="mt-4 inline-flex h-10 items-center rounded-full bg-[#ffcc00] px-5 font-bold text-black"
         >
           View @{chat.person.username}
         </Link>

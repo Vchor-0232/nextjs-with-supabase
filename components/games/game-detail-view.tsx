@@ -7,6 +7,8 @@ import {
 } from "@/components/home/game-spotlight";
 import type { GameDetail, Review } from "@/lib/game-detail";
 import { formatCount } from "@/lib/home-data";
+import { PANEL } from "@/components/home/app-chrome";
+import { cn } from "@/lib/utils";
 
 // The body of a game's Gamesprout page: screenshots, stats bar and details.
 // Numbers come from the daily Roblox sync; there's no link out to roblox.com.
@@ -59,22 +61,24 @@ function GameInfo({ game }: { game: GameDetail }) {
 
   return (
     <>
-      <section className="mb-3 rounded-2xl border border-white/10 bg-white/[0.07] px-3 py-2.5 shadow-[0_8px_18px_-12px_rgba(0,0,0,0.65)]">
-        <h2 className="mb-1 text-base font-bold">Description</h2>
+      <section className={`${PANEL} mx-0 mb-2.5 mt-2 px-2.5 py-2 shadow-[0_8px_18px_-12px_rgba(0,0,0,0.65)]`}>
+        <h2 className="mb-0.5 text-base font-bold leading-[21px]">Description</h2>
         <ExpandableText
           text={game.description?.trim() || "No description yet."}
-          className="whitespace-pre-line text-[13px] leading-relaxed text-white/90"
+          className="whitespace-pre-line text-[13px] leading-4 text-white/[0.92]"
         />
       </section>
 
       {game.tags.length > 0 && (
-        <ul aria-label="Game categories" className="mb-3 flex flex-wrap gap-[7px] px-1">
+        <ul aria-label="Game categories" className="mb-2.5 flex flex-wrap gap-[7px]">
           {game.tags.map((tag, i) => (
             <li
               key={tag}
-              className={`rounded-full border border-white/20 px-3.5 py-1 text-[13px] font-bold shadow-[0_4px_8px_rgba(0,0,0,0.22)] ${
-                i === 0 ? "bg-[#f5c518] text-black" : "bg-[#4d62db]"
-              }`}
+              className={cn(
+                "flex min-h-[27px] items-center rounded-[80px] border border-white/[0.18] px-3 text-[13px] font-bold shadow-[0_4px_8px_rgba(0,0,0,0.22)]",
+                i === 0 ? "bg-[#ffcc00] text-black" : "bg-[#4d62db]",
+                i % 2 === 0 ? "-rotate-1" : "rotate-1",
+              )}
             >
               {tag}
             </li>
@@ -82,14 +86,14 @@ function GameInfo({ game }: { game: GameDetail }) {
         </ul>
       )}
 
-      <p className="mb-3 px-1 text-xs text-neutral-400">
+      <p className="mb-2.5 px-1 text-[13px] leading-4 text-white/60">
         {facts.length > 0 && <>{facts.join(" · ")}. </>}
         {r
           ? `Stats from Roblox, updated ${timeAgo(r.syncedAt)}.`
           : "Roblox stats will appear after the next daily sync."}
       </p>
 
-      <aside className="mb-3 rounded-2xl border border-[#4d62db]/85 bg-[#4d62db]/20 px-3.5 py-2 text-center text-[13px]">
+      <aside className="mb-2.5 rounded-[16px] border border-[#4d62db]/85 bg-[#4d62db]/20 px-3.5 py-[7px] text-center text-[13px] leading-4">
         Remember to keep comments respectful and to follow our Community Guidelines.
       </aside>
     </>

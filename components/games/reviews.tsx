@@ -14,6 +14,7 @@ import {
 import { SendHorizontal, Star, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Reply, Review } from "@/lib/game-detail";
+import { PANEL } from "@/components/home/app-chrome";
 import { cn } from "@/lib/utils";
 
 // Reviews combine a star rating (ratings table) with an optional comment
@@ -84,7 +85,7 @@ export function ReviewProvider({
           className="fixed inset-x-0 bottom-24 z-30 mx-auto w-fit max-w-[90vw] rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold shadow-lg ring-1 ring-neutral-700"
         >
           {notice}{" "}
-          <Link href="/auth/login" className="text-[#f5c518] underline">
+          <Link href="/auth/login" className="text-[#ffcc00] underline">
             Log in
           </Link>
         </div>
@@ -204,7 +205,7 @@ function ReviewDialog({
               <Star
                 className={cn(
                   "h-9 w-9 transition",
-                  n <= shown ? "fill-[#f5c518] text-[#f5c518]" : "text-neutral-500",
+                  n <= shown ? "fill-[#ffcc00] text-[#ffcc00]" : "text-neutral-500",
                 )}
               />
             </button>
@@ -238,7 +239,7 @@ function ReviewDialog({
         <button
           type="submit"
           disabled={saving || !score}
-          className="h-11 rounded-full bg-[#f5c518] font-bold text-black transition hover:bg-[#ffd633] disabled:opacity-50"
+          className="h-11 rounded-full bg-[#ffcc00] font-bold text-black transition hover:bg-[#ffd84d] disabled:opacity-50"
         >
           {saving ? "Posting..." : body.trim() ? "Post review" : "Save rating"}
         </button>
@@ -260,13 +261,17 @@ function shortAgo(iso: string) {
 }
 
 function Avatar({ author, size }: { author: Reply["author"]; size: "sm" | "md" }) {
-  const box = size === "md" ? "h-9 w-9 text-sm" : "h-7 w-7 text-xs";
+  // Yellow ring and glow, as on the design's comments.
+  const box = cn(
+    "shrink-0 rounded-full border-2 border-[#ffcc00] shadow-[0_0_8px_rgba(255,204,0,0.55)]",
+    size === "md" ? "h-10 w-10 text-sm" : "h-7 w-7 text-xs",
+  );
   return author.avatarUrl ? (
-    <img src={author.avatarUrl} alt="" className={`${box} shrink-0 rounded-full object-cover`} />
+    <img src={author.avatarUrl} alt="" className={`${box} object-cover`} />
   ) : (
     <span
       aria-hidden="true"
-      className={`${box} grid shrink-0 place-items-center rounded-full bg-[#4d62db] font-extrabold uppercase`}
+      className={`${box} grid place-items-center bg-[#4d62db] font-extrabold uppercase`}
     >
       {author.username.slice(0, 1)}
     </span>
@@ -282,7 +287,7 @@ function MiniStars({ score }: { score: number }) {
           aria-hidden="true"
           className={cn(
             "h-3.5 w-3.5",
-            n <= score ? "fill-[#f5c518] text-[#f5c518]" : "text-neutral-600",
+            n <= score ? "fill-[#ffcc00] text-[#ffcc00]" : "text-white/30",
           )}
         />
       ))}
@@ -299,7 +304,7 @@ function DeleteButton({ id, onDeleted }: { id: string; onDeleted: () => void }) 
         const { error } = await createClient().from("comments").delete().eq("id", id);
         if (!error) onDeleted();
       }}
-      className="text-xs text-neutral-500 hover:text-red-300"
+      className="text-[13px] text-white/50 hover:text-red-300"
     >
       Delete
     </button>
@@ -335,19 +340,19 @@ function ReviewItem({ review, gameId }: { review: Review; gameId: string }) {
   };
 
   return (
-    <li className="flex gap-2.5 border-b border-neutral-800 py-3 last:border-b-0">
+    <li className="flex gap-2.5 border-b border-white/10 py-2.5 first:pt-0 last:border-b-0 last:pb-0">
       <Avatar author={review.author} size="md" />
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-neutral-400">
-          <span className="font-semibold text-neutral-200">@{review.author.username}</span>
+        <p className="flex flex-wrap items-center gap-x-1.5 text-[13px] leading-4 text-white/[0.82]">
+          <span className="font-bold text-white">@{review.author.username}</span>
           <span aria-hidden="true">·</span>
           <time dateTime={review.createdAt}>{shortAgo(review.createdAt)}</time>
           {review.rating !== null && <MiniStars score={review.rating} />}
         </p>
         {name !== review.author.username && <span className="sr-only">{name}</span>}
-        <p className="mt-0.5 whitespace-pre-line break-words text-[13px]">{review.body}</p>
+        <p className="mt-0.5 whitespace-pre-line break-words text-[13px] leading-[15px]">{review.body}</p>
 
-        <div className="mt-1.5 flex items-center gap-4 text-xs font-semibold text-neutral-400">
+        <div className="mt-1.5 flex items-center gap-4 text-[13px] font-bold text-white/[0.82]">
           {count > 0 && (
             <button
               type="button"
@@ -355,7 +360,7 @@ function ReviewItem({ review, gameId }: { review: Review; gameId: string }) {
               aria-expanded={showReplies}
               className="flex items-center gap-2 hover:text-white"
             >
-              <span aria-hidden="true" className="h-px w-6 bg-neutral-500" />
+              <span aria-hidden="true" className="h-px w-[23px] bg-white" />
               {showReplies ? "Hide replies" : `${count} ${count === 1 ? "Reply" : "Replies"}`}
             </button>
           )}
@@ -370,16 +375,16 @@ function ReviewItem({ review, gameId }: { review: Review; gameId: string }) {
         </div>
 
         {showReplies && count > 0 && (
-          <ul className="mt-2 flex flex-col gap-2 border-l border-neutral-800 pl-3">
+          <ul className="mt-2 flex flex-col gap-2 border-l-2 border-[#4d62db] pl-3">
             {review.replies.map((r) => (
               <li key={r.id} className="flex gap-2">
                 <Avatar author={r.author} size="sm" />
                 <div className="min-w-0">
-                  <p className="text-xs text-neutral-400">
-                    <span className="font-semibold text-neutral-200">@{r.author.username}</span>{" "}
+                  <p className="text-[13px] leading-4 text-white/[0.82]">
+                    <span className="font-bold text-white">@{r.author.username}</span>{" "}
                     · <time dateTime={r.createdAt}>{shortAgo(r.createdAt)}</time>
                   </p>
-                  <p className="whitespace-pre-line break-words text-[13px]">{r.body}</p>
+                  <p className="whitespace-pre-line break-words text-[13px] leading-[15px]">{r.body}</p>
                   {userId === r.author.id && (
                     <DeleteButton id={r.id} onDeleted={() => router.refresh()} />
                   )}
@@ -401,7 +406,7 @@ function ReviewItem({ review, gameId }: { review: Review; gameId: string }) {
               maxLength={BODY_MAX}
               placeholder={`Reply to @${review.author.username}`}
               autoFocus
-              className="h-9 min-w-0 flex-1 rounded-full bg-white px-3 text-sm text-black placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4d62db]"
+              className="h-9 min-w-0 flex-1 rounded-[16px] border-2 border-[#4d62db] bg-white px-3 text-[13px] text-black placeholder:text-neutral-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4d62db]"
             />
             <button
               type="submit"
@@ -436,11 +441,11 @@ export function ReviewsSection({
         Reviews ({total})
       </h2>
       {reviews.length === 0 ? (
-        <p className="py-4 text-center text-sm text-neutral-400">
+        <p className={`${PANEL} py-4 text-center text-[13px] font-semibold text-white/60`}>
           No reviews yet. Be the first to rate it!
         </p>
       ) : (
-        <ul className="px-1">
+        <ul className={`${PANEL} p-2.5`}>
           {reviews.map((r) => (
             <ReviewItem key={r.id} review={r} gameId={gameId} />
           ))}
@@ -451,12 +456,12 @@ export function ReviewsSection({
       <button
         type="button"
         onClick={() => open()}
-        className="mt-2 flex h-11 w-full items-center gap-2 rounded-full bg-white px-4 text-left text-sm text-neutral-500 shadow-[0_4px_8px_rgba(0,0,0,0.3)] transition hover:bg-neutral-100"
+        className="mt-2.5 flex h-10 w-full items-center gap-2 rounded-[16px] border-2 border-[#4d62db] bg-white px-3.5 text-left text-[13px] font-semibold text-neutral-500 shadow-[0_0_10px_rgba(77,98,219,0.85)] transition hover:bg-neutral-100"
       >
         <span className="flex-1">
-          {myRating ? "Add another comment…" : "Rate and comment…"}
+          {myRating ? "Comment...." : "Rate and comment...."}
         </span>
-        <SendHorizontal className="h-5 w-5 text-neutral-400" aria-hidden="true" />
+        <SendHorizontal className="h-5 w-5 text-[#4d62db]" aria-hidden="true" />
       </button>
     </section>
   );

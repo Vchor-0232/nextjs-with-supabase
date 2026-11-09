@@ -180,7 +180,7 @@ export function EditProfileForm({
         <button
           type="submit"
           disabled={saving}
-          className="h-11 flex-1 rounded-full bg-[#f5c518] font-bold text-black transition hover:bg-[#ffd633] disabled:opacity-60"
+          className="h-11 flex-1 rounded-full bg-[#ffcc00] font-bold text-black transition hover:bg-[#ffd84d] disabled:opacity-60"
         >
           {saving ? "Saving..." : "Save"}
         </button>
