@@ -1,23 +1,46 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { fetchTopRobloxGames, placeIdFromUrl } from "@/lib/roblox";
+import { placeIdFromUrl, searchSmallRobloxGames } from "@/lib/roblox";
 
-// Roblox discovery lists to import from, every day.
-// "up-and-coming" fits Gamesprout's goal of getting newer games seen.
-const LISTS = ["top-playing-now", "up-and-coming"];
-const DEFAULT_PER_LIST = 25;
+// Gamesprout features small Roblox games: under 100K total visits by
+// default (set ROBLOX_MAX_VISITS in Vercel to change it). Roblox's charts
+// only list huge games, so we search Roblox with a few of these keywords
+// each run, picked at random so the mix keeps changing.
+const KEYWORDS = [
+  "puzzle", "obby", "escape room", "story", "parkour", "tycoon",
+  "cafe", "farming", "fishing", "racing", "horror", "mystery",
+  "detective", "space", "pet", "building", "art", "music",
+  "rhythm", "platformer", "co-op", "survival", "cozy", "minigames",
+];
+const KEYWORDS_PER_DAY = 4;
+const DEFAULT_PER_DAY = 25;
+export const DEFAULT_MAX_VISITS = 100_000;
+
+export function maxVisits() {
+  const n = Number(process.env.ROBLOX_MAX_VISITS ?? DEFAULT_MAX_VISITS);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_VISITS;
+}
+
+// A random few keywords per run, so each run (daily, or by hand) finds a
+// different mix of games.
+function pickKeywords() {
+  const shuffled = [...KEYWORDS].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, KEYWORDS_PER_DAY);
+}
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 /**
- * Adds Roblox's top games to the games table (skipping ones already there),
+ * Adds small Roblox games to the games table (skipping ones already there),
  * owned by the first admin profile. The sync then fills in their numbers.
  * Needs the secret-key client, since it writes as no particular user.
  */
-export async function importTopRobloxGames(supabase: SupabaseClient) {
-  const perList = Number(process.env.ROBLOX_IMPORT_PER_LIST ?? DEFAULT_PER_LIST);
-  if (!Number.isFinite(perList) || perList <= 0) {
-    return { imported: 0, note: "Import turned off (ROBLOX_IMPORT_PER_LIST=0)", errors: [] };
+export async function importSmallRobloxGames(supabase: SupabaseClient) {
+  const perDay = Number(
+    process.env.ROBLOX_IMPORT_PER_DAY ?? process.env.ROBLOX_IMPORT_PER_LIST ?? DEFAULT_PER_DAY,
+  );
+  if (!Number.isFinite(perDay) || perDay <= 0) {
+    return { imported: 0, note: "Import turned off (ROBLOX_IMPORT_PER_DAY=0)", errors: [] };
   }
 
   // Imported games need an owner in profiles; we use the first admin.
@@ -38,8 +61,13 @@ export async function importTopRobloxGames(supabase: SupabaseClient) {
     };
   }
 
-  const [top, gamesRes, statsRes] = await Promise.all([
-    fetchTopRobloxGames(LISTS, perList),
+  const [found, gamesRes, statsRes] = await Promise.all([
+    // Leave time for the stats sync that runs after this.
+    searchSmallRobloxGames({
+      keywords: pickKeywords(),
+      maxVisits: maxVisits(),
+      deadline: Date.now() + 25_000,
+    }),
     supabase.from("games").select("roblox_url"),
     supabase.from("roblox_stats").select("place_id"),
   ]);
@@ -54,7 +82,7 @@ export async function importTopRobloxGames(supabase: SupabaseClient) {
     if (r.place_id) existing.add(Number(r.place_id));
   }
 
-  const toAdd = top.filter((g) => !existing.has(g.placeId));
+  const toAdd = found.games.filter((g) => !existing.has(g.placeId)).slice(0, perDay);
   const errors: { game: string; error: string }[] = [];
   const tagIds = new Map<string, number | null>();
   let imported = 0;
@@ -92,7 +120,14 @@ export async function importTopRobloxGames(supabase: SupabaseClient) {
     }
   }
 
-  return { imported, considered: top.length, errors };
+  return {
+    imported,
+    searched: found.searched,
+    smallGamesFound: found.games.length,
+    searchErrors: found.errors,
+    maxVisits: maxVisits(),
+    errors,
+  };
 }
 
 async function findOrCreateTag(
