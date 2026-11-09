@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { PageTitle } from "@/components/home/app-chrome";
+import { PageTitle, SectionDivider } from "@/components/home/app-chrome";
 import {
   FriendsSection,
+  GameOfTheWeekSection,
   HomeSkeleton,
   PopularSection,
-  RecommendedSection,
 } from "@/components/home/home-sections";
 import { getHomeData } from "@/lib/home-data";
 import { createClient } from "@/lib/supabase/server";
@@ -30,7 +30,10 @@ async function HomeContent() {
         </p>
       )}
       <FriendsSection friends={home.friends} count={home.friendCount} />
-      <RecommendedSection games={home.recommended} />
+      <SectionDivider />
+      {/* The best-rated game right now (first of the "recommended" list). */}
+      <GameOfTheWeekSection game={home.recommended[0] ?? null} />
+      <SectionDivider />
       <PopularSection games={home.popular} />
     </>
   );

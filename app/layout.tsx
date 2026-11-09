@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Nunito } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
@@ -13,8 +13,10 @@ export const metadata: Metadata = {
   description: "Discover Roblox games from up-and-coming developers.",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// The designs use Nunito (Semibold 600 to Black 900).
+const nunito = Nunito({
+  variable: "--font-nunito",
+  weight: ["500", "600", "700", "800", "900"],
   display: "swap",
   subsets: ["latin"],
 });
@@ -26,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${nunito.className} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

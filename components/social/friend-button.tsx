@@ -94,7 +94,7 @@ export function FriendButton({
         )}
         {relation === "received" && (
           <>
-            <button type="button" disabled={busy} onClick={accept} className={cn(pill, small, "bg-[#f5c518] text-black hover:bg-[#ffd633]")}>
+            <button type="button" disabled={busy} onClick={accept} className={cn(pill, small, "bg-[#ffcc00] text-black hover:bg-[#ffd84d]")}>
               <Check className="h-4 w-4" aria-hidden="true" /> Accept
             </button>
             <button type="button" disabled={busy} onClick={() => remove("none")} className={cn(pill, small, "bg-neutral-800 hover:bg-neutral-700")}>

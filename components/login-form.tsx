@@ -5,6 +5,7 @@ import {
   AuthButton,
   AuthDivider,
   AuthMessage,
+  AuthPrompt,
   PillInput,
 } from "@/components/auth/auth-ui";
 import { SocialLogin } from "@/components/auth/social-login";
@@ -55,48 +56,44 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex w-full flex-col items-center">
-      <form onSubmit={handleLogin} className="flex w-full flex-col gap-5">
-        <PillInput
-          placeholder="Username or Email"
-          autoComplete="username"
-          autoCapitalize="none"
-          required
-          value={identifier}
-          onChange={(e) => setIdentifier(e.target.value)}
-        />
-        <PillInput
-          type="password"
-          placeholder="Password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && <AuthMessage>{error}</AuthMessage>}
-        <AuthButton type="submit" disabled={isLoading} className="mt-1">
-          {isLoading ? "Logging in..." : "Log in"}
-        </AuthButton>
+    <div className="flex w-full flex-col">
+      <form onSubmit={handleLogin} className="flex w-full flex-col">
+        <div className="flex flex-col gap-3.5">
+          <PillInput
+            placeholder="Username / Email / Phone"
+            autoComplete="username"
+            autoCapitalize="none"
+            required
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+          />
+          <PillInput
+            type="password"
+            placeholder="Password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
         <Link
           href="/auth/forgot-password"
-          className="-mt-1 self-center text-sm font-semibold underline-offset-4 hover:underline"
+          className="mb-[26px] ml-auto mr-[5px] mt-[15px] text-[13px] font-extrabold underline-offset-[3px] hover:underline"
         >
-          Forgot your password?
+          Forgot password?
         </Link>
+        {error && <div className="-mt-3 mb-4"><AuthMessage>{error}</AuthMessage></div>}
+        <AuthButton type="submit" disabled={isLoading}>
+          {isLoading ? "Logging in..." : "Log in"}
+        </AuthButton>
       </form>
 
       <AuthDivider />
       <SocialLogin />
 
-      <p className="mt-10 text-sm font-semibold">
-        New to Gamesprout?{" "}
-        <Link
-          href="/auth/sign-up"
-          className="font-bold text-black underline underline-offset-4"
-        >
-          Sign up
-        </Link>
-      </p>
+      <AuthPrompt>
+        Don&apos;t have an account? <Link href="/auth/sign-up">Sign up</Link>
+      </AuthPrompt>
     </div>
   );
 }

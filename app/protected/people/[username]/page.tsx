@@ -42,12 +42,12 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
         <div className="flex items-center gap-4">
           <PersonAvatar person={person} size="lg" />
           <div className="min-w-0">
-            <h1 className="truncate text-2xl font-extrabold [text-shadow:0_0_10px_rgba(245,197,24,0.6)]">
+            <h1 className="truncate text-2xl font-extrabold [text-shadow:0_0_10px_rgba(255,204,0,0.6)]">
               {name}
             </h1>
             <p className="truncate text-sm text-neutral-400">@{person.username}</p>
             {page.robloxUsername && (
-              <p className="truncate text-xs font-semibold text-[#f5c518]">
+              <p className="truncate text-xs font-semibold text-[#ffcc00]">
                 Roblox: {page.robloxUsername}
               </p>
             )}
@@ -71,7 +71,7 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
           {page.relation === "friend" ? (
             <Link
               href={`/protected/messages/${person.username}`}
-              className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#f5c518] font-bold text-black shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:bg-[#ffd633]"
+              className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#ffcc00] font-bold text-black shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:bg-[#ffd84d]"
             >
               <MessageCircle className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
               Message

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Heart, Star, ThumbsDown, ThumbsUp } from "lucide-react";
+import { Heart, ThumbsDown, ThumbsUp } from "lucide-react";
+import { DesignStar, STATS_CELL, STATS_STRIP } from "@/components/home/game-spotlight";
 import { useReviewBox } from "@/components/games/reviews";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,7 @@ function useToast() {
       {toast.login && (
         <>
           {" "}
-          <Link href="/auth/login" className="text-[#f5c518] underline">
+          <Link href="/auth/login" className="text-[#ffcc00] underline">
             Log in
           </Link>
         </>
@@ -89,7 +90,7 @@ export function FavoriteButton({
         <Heart
           className={cn(
             "h-6 w-6",
-            favorited ? "fill-[#f5c518] text-[#f5c518]" : "text-white",
+            favorited ? "fill-[#ffcc00] text-[#ffcc00]" : "text-white",
           )}
         />
       </button>
@@ -171,15 +172,14 @@ export function GameStatsBar({
     router.refresh();
   };
 
-  const divider = <span aria-hidden="true" className="h-6 w-px bg-white/30" />;
   const voteButton =
-    "flex items-center gap-1 rounded-md px-1.5 py-1 transition hover:bg-white/15 aria-pressed:bg-black/30";
+    "-my-px min-w-0 rounded-[6px] px-1 py-0.5 transition hover:bg-white/15 aria-pressed:bg-white aria-pressed:text-black";
 
   return (
     <>
-      <div className="mt-2 flex items-center justify-between gap-1 rounded-2xl bg-[#4d62db] px-2 py-1.5 text-[13px] font-bold shadow-[0_6px_12px_rgba(0,0,0,0.22)]">
+      <div className={STATS_STRIP}>
         <div
-          className="flex items-center"
+          className="flex min-w-0 items-center"
           role="radiogroup"
           aria-label={
             avg === null
@@ -197,43 +197,38 @@ export function GameStatsBar({
               aria-label={`Rate ${n} star${n === 1 ? "" : "s"}`}
               onClick={() => openReviewBox(n)}
               onMouseEnter={() => setHover(n)}
-              className="p-0.5"
+              className="shrink-0 hover:scale-110"
             >
-              <Star
-                className={cn(
-                  "h-[18px] w-[18px] transition",
-                  n <= filled
-                    ? "fill-[#f5c518] text-[#f5c518]"
-                    : "fill-white/20 text-white/50",
-                )}
-              />
+              <DesignStar lit={n <= filled} />
             </button>
           ))}
-          <span className="ml-1 text-[#f5c518]">{count ? compact.format(count) : "—"}</span>
+          <span className="ml-1 text-[#ffcc00]">{count ? compact.format(count) : "—"}</span>
         </div>
-        {divider}
-        <span>Visits: {visits === null ? "—" : compact.format(visits)}</span>
-        {divider}
-        <button
-          type="button"
-          aria-pressed={vote === "like"}
-          aria-label={`Like (${compact.format(likes)})`}
-          onClick={() => castVote("like")}
-          className={voteButton}
-        >
-          <ThumbsUp className={cn("h-4 w-4", vote === "like" && "fill-[#f5c518] text-[#f5c518]")} />
-          {compact.format(likes)}
-        </button>
-        <button
-          type="button"
-          aria-pressed={vote === "dislike"}
-          aria-label={`Dislike (${compact.format(dislikes)})`}
-          onClick={() => castVote("dislike")}
-          className={voteButton}
-        >
-          <ThumbsDown className={cn("h-4 w-4", vote === "dislike" && "fill-[#f5c518] text-[#f5c518]")} />
-          {compact.format(dislikes)}
-        </button>
+        <span className={STATS_CELL}>Visits: {visits === null ? "—" : compact.format(visits)}</span>
+        <span className={STATS_CELL}>
+          <button
+            type="button"
+            aria-pressed={vote === "like"}
+            aria-label={`Like (${compact.format(likes)})`}
+            onClick={() => castVote("like")}
+            className={cn(voteButton, "flex items-center gap-0.5")}
+          >
+            <ThumbsUp className="h-[15px] w-[15px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
+            Likes: {compact.format(likes)}
+          </button>
+        </span>
+        <span className={STATS_CELL}>
+          <button
+            type="button"
+            aria-pressed={vote === "dislike"}
+            aria-label={`Dislike (${compact.format(dislikes)})`}
+            onClick={() => castVote("dislike")}
+            className={cn(voteButton, "flex items-center gap-0.5")}
+          >
+            <ThumbsDown className="h-[15px] w-[15px] shrink-0" strokeWidth={1.8} aria-hidden="true" />
+            {compact.format(dislikes)}
+          </button>
+        </span>
       </div>
       {toast.node}
     </>

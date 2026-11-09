@@ -18,7 +18,7 @@ async function SignUpOrSubmit() {
 
 export default function Page() {
   return (
-    <AuthShell>
+    <AuthShell tagline="Plant your account. Grow your game nights.">
       <Suspense>
         <SignUpOrSubmit />
       </Suspense>

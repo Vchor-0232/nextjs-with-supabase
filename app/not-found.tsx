@@ -13,7 +13,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="mt-4 inline-flex h-10 items-center rounded-full bg-[#f5c518] px-5 font-bold text-black transition hover:bg-[#ffd633]"
+          className="mt-4 inline-flex h-10 items-center rounded-full bg-[#ffcc00] px-5 font-bold text-black transition hover:bg-[#ffd84d]"
         >
           Back to Gamesprout
         </Link>

@@ -32,7 +32,7 @@ async function ProfileContent() {
         followers={page.followers}
         following={page.following}
       />
-      <FriendsSection friends={page.friends} count={page.friendCount} />
+      <FriendsSection friends={page.friends} count={page.friendCount} size="profile" />
       <GameGridSection
         title={`Favorite Games (${page.favoriteCount})`}
         games={page.favorites}

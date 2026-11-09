@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft } from "lucide-react";
 import { AppChrome } from "@/components/home/app-chrome";
 import { GameDetailView } from "@/components/games/game-detail-view";
 import { getGameDetail, getGameReviews } from "@/lib/game-detail";
@@ -23,14 +21,7 @@ async function GamePageContent({ params }: { params: Promise<{ id: string }> }) 
   const loggedIn = viewerId !== null;
 
   return (
-    <AppChrome variant={loggedIn ? "app" : "public"}>
-      <Link
-        href={loggedIn ? "/protected" : "/"}
-        className="mb-2 inline-flex items-center gap-1 px-1 text-sm font-semibold text-neutral-300 hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back
-      </Link>
+    <AppChrome variant={loggedIn ? "app" : "public"} backHref={loggedIn ? "/protected" : "/"}>
       <GameDetailView game={game} reviews={reviews} />
     </AppChrome>
   );
@@ -44,11 +35,11 @@ export default function GamePage({
   return (
     <Suspense
       fallback={
-        <AppChrome variant="public">
+        <AppChrome variant="public" backHref="/">
           <div className="flex flex-col gap-3" aria-hidden="true">
-            <div className="h-12 w-2/3 animate-pulse rounded-xl bg-neutral-900" />
-            <div className="aspect-[16/10] animate-pulse rounded-2xl bg-neutral-900" />
-            <div className="h-48 animate-pulse rounded-2xl bg-neutral-900" />
+            <div className="h-11 w-2/3 animate-pulse rounded-xl bg-white/[0.07]" />
+            <div className="h-[215px] animate-pulse rounded-[16px] bg-white/[0.07]" />
+            <div className="h-48 animate-pulse rounded-[16px] bg-white/[0.07]" />
           </div>
         </AppChrome>
       }

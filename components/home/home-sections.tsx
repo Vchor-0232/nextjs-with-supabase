@@ -2,46 +2,66 @@
    from any host developers use, so we skip next/image's domain list. */
 import Link from "next/link";
 import { Gamepad2, ThumbsUp } from "lucide-react";
-import { SectionHeader } from "@/components/home/app-chrome";
+import { PANEL, SectionHeader } from "@/components/home/app-chrome";
+import { cn } from "@/lib/utils";
 import {
   formatCount,
   type FriendCard,
   type GameCard,
 } from "@/lib/home-data";
 
-const panel = "rounded-2xl border border-neutral-800 bg-neutral-950";
+// Sizes, colors and spacing follow the Figma "homepage" and "GameSprout
+// profile" frames.
 
 export function FriendsSection({
   friends,
   count,
+  size = "home",
 }: {
   friends: FriendCard[];
   count: number;
+  size?: "home" | "profile"; // home: 52px avatars in a row; profile: 44px, evenly spaced
 }) {
-  // Matches the Home and Profile designs: "Friends (57)" with avatars.
   return (
-    <section className="mb-4">
+    <section className="mb-3">
       <SectionHeader title={`Friends (${count})`} href="/protected/friends" />
-      <div className={`${panel} px-2 py-3`}>
+      <div
+        className={cn(
+          PANEL,
+          "px-2 py-[7px]",
+          size === "profile" && "shadow-[0_6px_18px_rgba(0,0,0,0.25)]",
+        )}
+      >
         {friends.length === 0 ? (
-          <p className="py-4 text-center text-sm text-neutral-400">
+          <p className="py-4 text-center text-[13px] font-semibold text-white/60">
             No friends yet.{" "}
-            <Link href="/protected/friends" className="font-semibold text-[#f5c518] underline">
+            <Link href="/protected/friends" className="font-bold text-[#ffcc00] underline">
               Find friends
             </Link>
           </p>
         ) : (
-          // Padding leaves room for the yellow rings, which the scroll area would clip.
-          <ul className="flex gap-3 overflow-x-auto p-1.5">
-            {friends.map((f) => (
-              <li key={f.id} className="w-14 shrink-0">
+          // A little padding keeps the glowing rings from being clipped.
+          <ul
+            className={cn(
+              "flex p-1",
+              size === "home" ? "gap-[22px] overflow-x-auto" : "gap-2",
+            )}
+          >
+            {friends.slice(0, size === "home" ? 12 : 4).map((f) => (
+              <li
+                key={f.id}
+                className={size === "home" ? "w-[52px] shrink-0" : "min-w-0 flex-1"}
+              >
                 {/* Tap a friend to see their profile (and message them). */}
                 <Link
                   href={`/protected/people/${f.username}`}
-                  className="flex flex-col items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className={cn(
+                    "flex flex-col items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
+                    size === "home" ? "gap-1" : "gap-0.5",
+                  )}
                 >
-                  <Avatar friend={f} />
-                  <span className="mt-1 w-full truncate text-center text-xs font-semibold">
+                  <Avatar friend={f} size={size === "home" ? 52 : 44} />
+                  <span className="w-full truncate text-center text-[13px] font-bold leading-[18px]">
                     {f.displayName ?? f.username}
                   </span>
                 </Link>
@@ -54,37 +74,29 @@ export function FriendsSection({
   );
 }
 
-export function Avatar({ friend }: { friend: FriendCard }) {
-  const ring = "h-14 w-14 rounded-full ring-[3px] ring-[#f5c518]";
+// Round avatar with the design's yellow ring and glow.
+export function Avatar({ friend, size = 52 }: { friend: FriendCard; size?: 44 | 52 }) {
+  const ring = cn(
+    "shrink-0 rounded-full border-2 border-[#ffcc00]",
+    size === 52
+      ? "h-[52px] w-[52px] shadow-[0_0_8px_#ffcc00]"
+      : "h-11 w-11 shadow-[0_0_8px_rgba(255,204,0,0.5)]",
+  );
   return friend.avatarUrl ? (
-    <img
-      src={friend.avatarUrl}
-      alt=""
-      className={`${ring} object-cover`}
-    />
+    <img src={friend.avatarUrl} alt="" className={`${ring} object-cover`} />
   ) : (
     <span
       aria-hidden="true"
-      className={`${ring} grid place-items-center bg-[#4d62db] text-xl font-extrabold uppercase`}
+      className={`${ring} grid place-items-center bg-[#4d62db] text-xl font-black uppercase`}
     >
       {friend.username.slice(0, 1)}
     </span>
   );
 }
 
-function Thumbnail({
-  game,
-  className,
-}: {
-  game: GameCard;
-  className: string;
-}) {
+function Thumbnail({ game, className }: { game: GameCard; className: string }) {
   return game.thumbnailUrl ? (
-    <img
-      src={game.thumbnailUrl}
-      alt=""
-      className={`${className} object-cover`}
-    />
+    <img src={game.thumbnailUrl} alt="" className={`${className} object-cover`} />
   ) : (
     <div
       aria-hidden="true"
@@ -95,10 +107,15 @@ function Thumbnail({
   );
 }
 
-function Rating({ pct }: { pct: number | null }) {
+function Rating({ pct, weight = "semibold" }: { pct: number | null; weight?: "semibold" | "bold" }) {
   return (
-    <span className="flex items-center gap-1 text-xs text-neutral-300">
-      <ThumbsUp className="h-3.5 w-3.5 fill-[#4d62db] text-[#8c9bff]" />
+    <span
+      className={cn(
+        "flex items-center gap-1 text-[13px] leading-[18px] text-white/60",
+        weight === "bold" ? "font-bold" : "font-semibold",
+      )}
+    >
+      <ThumbsUp aria-hidden="true" className="h-4 w-4 shrink-0 fill-[#4d62db] text-[#8c9bff]" />
       {pct === null ? "No ratings yet" : `${pct}% Rating`}
     </span>
   );
@@ -106,23 +123,45 @@ function Rating({ pct }: { pct: number | null }) {
 
 function EmptyGames({ text = "No games yet. Check back soon!" }: { text?: string }) {
   return (
-    <p className={`${panel} py-6 text-center text-sm text-neutral-400`}>
+    <p className={`${PANEL} py-6 text-center text-[13px] font-semibold text-white/60`}>
       {text}
     </p>
   );
 }
 
-export function RecommendedSection({ games }: { games: GameCard[] }) {
+// One big card: the best-rated game right now.
+export function GameOfTheWeekSection({ game }: { game: GameCard | null }) {
   return (
-    <GameGridSection
-      title="Recommended For You"
-      href="/protected/charts"
-      games={games}
-    />
+    <section className="mb-1">
+      <SectionHeader title="Game of the week" href="/protected/charts" centered />
+      {!game ? (
+        <EmptyGames />
+      ) : (
+        <Link
+          href={`/games/${game.id}`}
+          className={cn(
+            PANEL,
+            "flex flex-col gap-1.5 overflow-hidden shadow-[0_12px_24px_-10px_rgba(0,0,0,0.4)] transition hover:border-[#4d62db]",
+          )}
+        >
+          <Thumbnail game={game} className="h-[110px] w-full rounded-[10px]" />
+          <div className="flex min-w-0 flex-col gap-1 pb-1.5 pl-[15px] pr-2">
+            <p className="truncate text-base font-extrabold">{game.title}</p>
+            <Rating pct={game.ratingPct} />
+          </div>
+        </Link>
+      )}
+    </section>
   );
 }
 
-// Two game cards side by side (Recommended, Favorite Games).
+export function RecommendedSection({ games }: { games: GameCard[] }) {
+  return (
+    <GameGridSection title="Recommended For You" href="/protected/charts" games={games} />
+  );
+}
+
+// Two game cards side by side (Favorite Games on Profile).
 export function GameGridSection({
   title,
   href,
@@ -135,22 +174,22 @@ export function GameGridSection({
   emptyText?: string;
 }) {
   return (
-    <section className="mb-4">
+    <section className="mb-3">
       <SectionHeader title={title} href={href} />
       {games.length === 0 ? (
         <EmptyGames text={emptyText} />
       ) : (
-        <ul className="grid grid-cols-2 gap-2">
+        <ul className="grid grid-cols-2 gap-3">
           {games.map((g) => (
-            <li key={g.id}>
+            <li key={g.id} className="min-w-0">
               <Link
                 href={`/games/${g.id}`}
-                className="block overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 transition hover:border-[#4d62db]"
+                className={cn(PANEL, "block overflow-hidden transition hover:border-[#4d62db]")}
               >
-                <Thumbnail game={g} className="aspect-[4/3] w-full" />
-                <div className="p-2">
-                  <p className="truncate text-sm font-bold">{g.title}</p>
-                  <Rating pct={g.ratingPct} />
+                <Thumbnail game={g} className="h-[90px] w-full rounded-[10px]" />
+                <div className="flex flex-col gap-0.5 px-2 py-1.5">
+                  <p className="truncate text-base font-extrabold leading-[22px]">{g.title}</p>
+                  <Rating pct={g.ratingPct} weight="bold" />
                 </div>
               </Link>
             </li>
@@ -171,29 +210,33 @@ export function PopularSection({
   seeAllHref?: string | null; // null hides "See All"
 }) {
   return (
-    <section className="mb-4">
+    <section className="mb-3">
       <SectionHeader title={title} href={seeAllHref ?? undefined} />
       {games.length === 0 ? (
         <EmptyGames />
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-1">
           {games.map((g) => (
             <li key={g.id}>
               <Link
                 href={`/games/${g.id}`}
-                className="flex items-center gap-3 rounded-xl border border-neutral-800 bg-neutral-900 p-2 transition hover:border-[#4d62db]"
+                className={cn(
+                  PANEL,
+                  "flex items-center gap-3 px-2.5 py-2 shadow-[0_6px_18px_rgba(0,0,0,0.25)] transition hover:border-[#4d62db]",
+                )}
               >
-                <Thumbnail game={g} className="h-16 w-16 shrink-0 rounded-lg" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-bold">{g.title}</p>
+                <Thumbnail game={g} className="h-16 w-16 shrink-0 rounded-[8px]" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="truncate text-base font-extrabold">{g.title}</p>
                   {g.tags.length > 0 && (
-                    <div className="my-1 flex flex-wrap gap-1">
+                    <div className="flex gap-1.5 overflow-hidden">
                       {g.tags.slice(0, 2).map((tag, i) => (
                         <span
                           key={tag}
-                          className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
-                            i === 0 ? "bg-[#4d62db]" : "bg-neutral-700"
-                          }`}
+                          className={cn(
+                            "shrink-0 rounded-[20px] px-2 py-0.5 text-[13px] font-bold",
+                            i === 0 ? "bg-[#4d62db] text-white" : "bg-white/20 text-white/60",
+                          )}
                         >
                           {tag}
                         </span>
@@ -202,7 +245,7 @@ export function PopularSection({
                   )}
                   <Rating pct={g.ratingPct} />
                 </div>
-                <span className="shrink-0 self-start pt-1 text-xs text-neutral-300">
+                <span className="shrink-0 text-[13px] font-semibold text-white/60">
                   {formatCount(g.views)}{" "}
                   {g.views === 1 ? g.viewsLabel.slice(0, -1) : g.viewsLabel}
                 </span>
@@ -216,7 +259,7 @@ export function PopularSection({
 }
 
 export function HomeSkeleton() {
-  const block = "animate-pulse rounded-2xl bg-neutral-900";
+  const block = "animate-pulse rounded-[16px] bg-white/[0.07]";
   return (
     <div aria-hidden="true" className="flex flex-col gap-4">
       <div className={`${block} h-28`} />

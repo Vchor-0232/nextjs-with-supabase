@@ -7,15 +7,19 @@ import { FcGoogle } from "react-icons/fc";
 import {
   FaDiscord,
   FaEllipsisH,
-  FaFacebookF,
+  FaFacebook,
   FaTwitch,
 } from "react-icons/fa";
 import { SiRoblox } from "react-icons/si";
 
 type OAuthProvider = "google" | "facebook" | "discord" | "twitch";
 
-const circle =
-  "grid h-11 w-11 place-items-center rounded-full bg-black shadow-[0_4px_6px_rgba(0,0,0,0.35)] transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:opacity-60";
+// Chunky "sticker" buttons from the design; every other one leans the
+// other way.
+const tile =
+  "grid h-[54px] w-[54px] place-items-center border-2 border-white bg-black shadow-[0_4px_0_rgba(0,0,0,0.2)] transition hover:-translate-y-[3px] hover:-rotate-2 hover:border-[#ffcc00] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#ffcc00]/40 disabled:opacity-60";
+const circle = `${tile} rounded-[18px_18px_12px_18px]`;
+const tilted = `${tile} rotate-2 rounded-[12px_18px_18px_18px]`;
 
 // Asks Supabase which social logins are switched on, so a click on one that
 // isn't set up shows a friendly message instead of Supabase's raw error page.
@@ -67,8 +71,8 @@ export function SocialLogin() {
   };
 
   return (
-    <div className="flex w-full flex-col items-center gap-4">
-      <div className="flex items-center justify-center gap-5">
+    <div className="mb-[34px] flex w-full flex-col items-center gap-3.5">
+      <div className="flex items-center justify-center gap-3.5">
         <button
           type="button"
           className={circle}
@@ -76,16 +80,16 @@ export function SocialLogin() {
           disabled={busy !== null}
           onClick={() => signInWith("google", "Google")}
         >
-          <FcGoogle className="h-7 w-7" />
+          <FcGoogle className="h-[25px] w-[25px]" />
         </button>
         <button
           type="button"
-          className={circle}
+          className={tilted}
           aria-label="Continue with Facebook"
           disabled={busy !== null}
           onClick={() => signInWith("facebook", "Facebook")}
         >
-          <FaFacebookF className="h-6 w-6 text-white" />
+          <FaFacebook className="h-[25px] w-[25px] rounded-full bg-white text-[#1877f2]" />
         </button>
         <button
           type="button"
@@ -97,21 +101,21 @@ export function SocialLogin() {
             setMessage("Roblox login is coming soon.");
           }}
         >
-          <SiRoblox className="h-6 w-6 text-neutral-200" />
+          <SiRoblox className="h-[25px] w-[25px] text-white" />
         </button>
         <button
           type="button"
-          className={circle}
+          className={tilted}
           aria-label="More login options"
           aria-expanded={showMore}
           onClick={() => setShowMore((v) => !v)}
         >
-          <FaEllipsisH className="h-6 w-6 text-white" />
+          <FaEllipsisH className="h-[22px] w-[22px] text-white" />
         </button>
       </div>
 
       {showMore && (
-        <div className="flex items-center justify-center gap-5">
+        <div className="flex items-center justify-center gap-3.5">
           <button
             type="button"
             className={circle}
@@ -119,16 +123,16 @@ export function SocialLogin() {
             disabled={busy !== null}
             onClick={() => signInWith("discord", "Discord")}
           >
-            <FaDiscord className="h-6 w-6 text-[#8c9eff]" />
+            <FaDiscord className="h-[25px] w-[25px] text-[#8c9eff]" />
           </button>
           <button
             type="button"
-            className={circle}
+            className={tilted}
             aria-label="Continue with Twitch"
             disabled={busy !== null}
             onClick={() => signInWith("twitch", "Twitch")}
           >
-            <FaTwitch className="h-6 w-6 text-[#b38cff]" />
+            <FaTwitch className="h-[25px] w-[25px] text-[#b38cff]" />
           </button>
         </div>
       )}

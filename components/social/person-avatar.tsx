@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const SIZES = {
   sm: "h-9 w-9 text-sm",
   md: "h-12 w-12 text-lg",
-  lg: "h-[88px] w-[88px] text-4xl ring-[3px] ring-[#f5c518]",
+  lg: "h-[88px] w-[88px] text-4xl ring-[3px] ring-[#ffcc00]",
 };
 
 export function PersonAvatar({
