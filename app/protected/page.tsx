@@ -31,10 +31,13 @@ async function HomeContent() {
       )}
       <FriendsSection friends={home.friends} count={home.friendCount} />
       <SectionDivider />
-      {/* The best-rated game right now (first of the "recommended" list). */}
-      <GameOfTheWeekSection game={home.recommended[0] ?? null} />
-      <SectionDivider />
-      <PopularSection games={home.popular} />
+      {/* Side by side on computers. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-6">
+        {/* The best-rated game right now (first of the "recommended" list). */}
+        <GameOfTheWeekSection game={home.recommended[0] ?? null} />
+        <SectionDivider className="lg:hidden" />
+        <PopularSection games={home.popular} listClassName="md:grid-cols-2 lg:grid-cols-1" />
+      </div>
     </>
   );
 }

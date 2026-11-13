@@ -25,18 +25,27 @@ async function PopularForVisitors() {
     console.error("Popular Now failed to load:", error);
   }
 
-  return <PopularSection games={popular} seeAllHref="/auth/sign-up" />;
+  return (
+    <PopularSection
+      games={popular}
+      seeAllHref="/auth/sign-up"
+      listClassName="md:grid-cols-2 lg:grid-cols-1"
+    />
+  );
 }
 
 export default function Page() {
   return (
     <AppChrome variant="public">
-      <GameSpotlight game={PLACEHOLDER_SPOTLIGHT} />
-      <Suspense
-        fallback={<div className="h-60 animate-pulse rounded-2xl bg-neutral-900" />}
-      >
-        <PopularForVisitors />
-      </Suspense>
+      {/* Side by side on computers. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+        <GameSpotlight game={PLACEHOLDER_SPOTLIGHT} />
+        <Suspense
+          fallback={<div className="h-60 animate-pulse rounded-2xl bg-neutral-900" />}
+        >
+          <PopularForVisitors />
+        </Suspense>
+      </div>
     </AppChrome>
   );
 }

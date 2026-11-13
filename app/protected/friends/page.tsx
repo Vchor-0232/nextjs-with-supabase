@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { MessageCircle } from "lucide-react";
-import { PageTitle, SectionHeader } from "@/components/home/app-chrome";
+import { Narrow, PageTitle, SectionHeader } from "@/components/home/app-chrome";
 import { FriendButton } from "@/components/social/friend-button";
 import { PeopleSearch } from "@/components/social/people-search";
 import { PersonAvatar } from "@/components/social/person-avatar";
@@ -137,7 +137,7 @@ async function FriendsContent() {
 
 export default function FriendsPage() {
   return (
-    <>
+    <Narrow>
       <PageTitle>Friends</PageTitle>
       <Suspense
         fallback={
@@ -149,6 +149,6 @@ export default function FriendsPage() {
       >
         <FriendsContent />
       </Suspense>
-    </>
+    </Narrow>
   );
 }

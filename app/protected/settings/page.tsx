@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Pencil, ShieldCheck } from "lucide-react";
-import { PageTitle } from "@/components/home/app-chrome";
+import { Narrow, PageTitle } from "@/components/home/app-chrome";
 import { GamesproutLogoutButton } from "@/components/home/logout-button";
 
 const row =
@@ -8,7 +8,7 @@ const row =
 
 export default function SettingsPage() {
   return (
-    <>
+    <Narrow>
       <PageTitle>Settings</PageTitle>
       <nav
         aria-label="Settings"
@@ -26,6 +26,6 @@ export default function SettingsPage() {
         </Link>
       </nav>
       <GamesproutLogoutButton />
-    </>
+    </Narrow>
   );
 }

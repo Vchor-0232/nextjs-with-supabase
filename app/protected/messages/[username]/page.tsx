@@ -18,7 +18,7 @@ async function ChatContent({ params }: { params: Promise<{ username: string }> }
   // Chats are only between friends (the database enforces this too).
   if (chat.relation !== "friend") {
     return (
-      <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950 p-6 text-center">
+      <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-neutral-800 bg-neutral-950 p-6 text-center">
         <p className="font-bold">You can only chat with friends.</p>
         <Link
           href={`/protected/people/${chat.person.username}`}
