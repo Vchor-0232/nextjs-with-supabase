@@ -196,7 +196,7 @@ export function ChatView({
 
   return (
     // Fills the screen below the Gamesprout header (the tab bar is hidden here).
-    <div className="fixed inset-x-0 bottom-0 top-12 z-10 mx-auto flex w-full max-w-md flex-col bg-black px-3 pt-2">
+    <div className="fixed inset-x-0 bottom-0 top-12 z-10 mx-auto flex w-full max-w-md flex-col bg-black px-3 pt-2 md:max-w-3xl md:px-6 lg:left-60 lg:top-14 lg:pt-4">
       {/* Who you're chatting with; tap to see their profile. */}
       <div className="flex items-center gap-2 border-b border-neutral-800 pb-2">
         <Link

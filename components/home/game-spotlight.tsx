@@ -108,7 +108,7 @@ export function GameSpotlight({
         role="region"
         aria-roledescription="carousel"
         aria-label={`${game.title} images`}
-        className="relative h-[215px] overflow-hidden rounded-[16px] border border-white/[0.18] bg-black shadow-[0_12px_24px_-10px_rgba(0,0,0,0.65)]"
+        className="relative h-[215px] overflow-hidden md:h-[380px] lg:h-[420px] rounded-[16px] border border-white/[0.18] bg-black shadow-[0_12px_24px_-10px_rgba(0,0,0,0.65)]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}

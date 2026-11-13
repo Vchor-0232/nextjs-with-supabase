@@ -26,19 +26,35 @@ async function ProfileContent() {
           Couldn&apos;t load everything: {page.error}
         </p>
       )}
-      <ProfileCard
-        profile={page.profile}
-        friendCount={page.friendCount}
-        followers={page.followers}
-        following={page.following}
-      />
-      <FriendsSection friends={page.friends} count={page.friendCount} size="profile" />
-      <GameGridSection
-        title={`Favorite Games (${page.favoriteCount})`}
-        games={page.favorites}
-        emptyText="No favorite games yet."
-      />
-      <BadgesSection badges={page.badges} />
+      {/* Phones: one column in the design's order. Computers: profile card
+          and badges on the left, friends and favorites on the right. */}
+      <div className="flex flex-col lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <div className="contents lg:sticky lg:top-[76px] lg:block">
+          <div className="order-1">
+            <ProfileCard
+              profile={page.profile}
+              friendCount={page.friendCount}
+              followers={page.followers}
+              following={page.following}
+            />
+          </div>
+          <div className="order-4">
+            <BadgesSection badges={page.badges} />
+          </div>
+        </div>
+        <div className="contents lg:block">
+          <div className="order-2">
+            <FriendsSection friends={page.friends} count={page.friendCount} size="profile" />
+          </div>
+          <div className="order-3">
+            <GameGridSection
+              title={`Favorite Games (${page.favoriteCount})`}
+              games={page.favorites}
+              emptyText="No favorite games yet."
+            />
+          </div>
+        </div>
+      </div>
     </>
   );
 }

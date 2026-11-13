@@ -25,7 +25,7 @@ function useToast() {
   const node = toast && (
     <div
       role="status"
-      className="fixed inset-x-0 bottom-24 z-30 mx-auto w-fit max-w-[90vw] rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold shadow-lg ring-1 ring-neutral-700"
+      className="fixed inset-x-0 bottom-24 z-30 lg:bottom-8 mx-auto w-fit max-w-[90vw] rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold shadow-lg ring-1 ring-neutral-700"
     >
       {toast.text}
       {toast.login && (

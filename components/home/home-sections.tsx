@@ -47,10 +47,14 @@ export function FriendsSection({
               size === "home" ? "gap-[22px] overflow-x-auto" : "gap-2",
             )}
           >
-            {friends.slice(0, size === "home" ? 12 : 4).map((f) => (
+            {friends.slice(0, size === "home" ? 12 : 8).map((f, i) => (
               <li
                 key={f.id}
-                className={size === "home" ? "w-[52px] shrink-0" : "min-w-0 flex-1"}
+                className={cn(
+                  size === "home" ? "w-[52px] shrink-0" : "min-w-0 flex-1",
+                  // Phones fit 4 on the profile; bigger screens show up to 8.
+                  size === "profile" && i >= 4 && "hidden md:block",
+                )}
               >
                 {/* Tap a friend to see their profile (and message them). */}
                 <Link
@@ -144,7 +148,7 @@ export function GameOfTheWeekSection({ game }: { game: GameCard | null }) {
             "flex flex-col gap-1.5 overflow-hidden shadow-[0_12px_24px_-10px_rgba(0,0,0,0.4)] transition hover:border-[#4d62db]",
           )}
         >
-          <Thumbnail game={game} className="h-[110px] w-full rounded-[10px]" />
+          <Thumbnail game={game} className="h-[110px] w-full rounded-[10px] md:h-[240px] lg:h-[300px]" />
           <div className="flex min-w-0 flex-col gap-1 pb-1.5 pl-[15px] pr-2">
             <p className="truncate text-base font-extrabold">{game.title}</p>
             <Rating pct={game.ratingPct} />
@@ -179,14 +183,14 @@ export function GameGridSection({
       {games.length === 0 ? (
         <EmptyGames text={emptyText} />
       ) : (
-        <ul className="grid grid-cols-2 gap-3">
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
           {games.map((g) => (
             <li key={g.id} className="min-w-0">
               <Link
                 href={`/games/${g.id}`}
                 className={cn(PANEL, "block overflow-hidden transition hover:border-[#4d62db]")}
               >
-                <Thumbnail game={g} className="h-[90px] w-full rounded-[10px]" />
+                <Thumbnail game={g} className="h-[90px] w-full rounded-[10px] md:h-[120px]" />
                 <div className="flex flex-col gap-0.5 px-2 py-1.5">
                   <p className="truncate text-base font-extrabold leading-[22px]">{g.title}</p>
                   <Rating pct={g.ratingPct} weight="bold" />
@@ -204,10 +208,12 @@ export function PopularSection({
   games,
   title = "Popular Now",
   seeAllHref = "/protected/charts",
+  listClassName = "md:grid-cols-2",
 }: {
   games: GameCard[];
   title?: string;
   seeAllHref?: string | null; // null hides "See All"
+  listClassName?: string; // columns on bigger screens
 }) {
   return (
     <section className="mb-3">
@@ -215,7 +221,7 @@ export function PopularSection({
       {games.length === 0 ? (
         <EmptyGames />
       ) : (
-        <ul className="flex flex-col gap-1">
+        <ul className={cn("grid grid-cols-1 gap-1 md:gap-2", listClassName)}>
           {games.map((g) => (
             <li key={g.id}>
               <Link

@@ -21,6 +21,7 @@ async function Charts() {
         title={`Most Visited (${all.length})`}
         games={all}
         seeAllHref={null}
+        listClassName="md:grid-cols-2 xl:grid-cols-3"
       />
     </>
   );
