@@ -4,11 +4,8 @@ import Link from "next/link";
 import { Gamepad2, ThumbsUp } from "lucide-react";
 import { PANEL, SectionHeader } from "@/components/home/app-chrome";
 import { cn } from "@/lib/utils";
-import {
-  formatCount,
-  type FriendCard,
-  type GameCard,
-} from "@/lib/home-data";
+import { formatCount } from "@/lib/format";
+import type { FriendCard, GameCard } from "@/lib/home-data";
 
 // Sizes, colors and spacing follow the Figma "homepage" and "GameSprout
 // profile" frames.
@@ -271,6 +268,226 @@ export function HomeSkeleton() {
       <div className={`${block} h-28`} />
       <div className={`${block} h-48`} />
       <div className={`${block} h-60`} />
+    </div>
+  );
+}
+
+// --- Computer layout (the Figma desktop prototype) ---------------------------
+
+// Panels on the desktop prototype have a slightly stronger edge and shadow.
+export const DESK_PANEL =
+  "rounded-[16px] border border-white/[0.12] bg-white/[0.07] shadow-[0_8px_22px_-12px_rgba(0,0,0,0.65)]";
+
+// Plain section heading with a light-blue link (desktop home).
+export function DeskSectionHead({
+  title,
+  href,
+  linkLabel = "See All",
+}: {
+  title: string;
+  href?: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="mb-2.5 flex items-center justify-between gap-3">
+      <h2 className="truncate text-lg font-black">{title}</h2>
+      {href && (
+        <Link
+          href={href}
+          className="shrink-0 text-[13px] font-extrabold text-[#93a4ff] transition hover:text-white"
+        >
+          {linkLabel} →
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// Big game card: wide picture with the genre on it, then name, rating, visits.
+export function GameTile({ game }: { game: GameCard }) {
+  const art = game.bannerUrl ?? game.thumbnailUrl;
+  return (
+    <Link
+      href={`/games/${game.id}`}
+      className="block overflow-hidden rounded-[16px] border border-white/[0.12] bg-white/[0.07] transition hover:-translate-y-0.5 hover:bg-white/[0.11]"
+    >
+      <div className="relative aspect-[16/10] w-full bg-gradient-to-br from-[#2a41b5] to-[#182359]">
+        {art ? (
+          <img src={art} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : (
+          <Gamepad2 aria-hidden="true" className="absolute inset-0 m-auto h-1/3 w-1/3 text-white/40" />
+        )}
+        {game.tags[0] && (
+          <span className="absolute bottom-2.5 left-2.5 rounded-full border border-white/20 bg-black/65 px-2 py-[3px] text-[11px] font-extrabold">
+            {game.tags[0]}
+          </span>
+        )}
+      </div>
+      <div className="px-3 py-2.5">
+        <p className="mb-1 truncate text-[15px] font-black">{game.title}</p>
+        <p className="flex justify-between gap-2 text-xs font-bold text-white/65">
+          <span className="font-extrabold text-[#ffcc00]">
+            {game.ratingPct === null ? "No ratings yet" : `${game.ratingPct}% Liked`}
+          </span>
+          <span>
+            {formatCount(game.views)} {game.viewsLabel}
+          </span>
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+// Numbered row (Popular Now on the desktop home, and Charts). Pass what goes
+// on the right; it defaults to the visit count.
+export function RankRow({
+  rank,
+  game,
+  right,
+  size = "desktop",
+}: {
+  rank: number;
+  game: GameCard;
+  right?: React.ReactNode;
+  size?: "desktop" | "responsive"; // responsive: phone design sizes below lg
+}) {
+  const phone = size === "responsive";
+  return (
+    <Link
+      href={`/games/${game.id}`}
+      className={cn(
+        "flex items-center gap-3 border border-white/[0.12] bg-white/[0.07] transition hover:bg-white/[0.11]",
+        phone
+          ? "rounded-[16px] border-white/10 py-2.5 pl-2.5 pr-3 lg:rounded-[14px] lg:border-white/[0.12] lg:px-3"
+          : "rounded-[14px] px-3 py-2.5",
+      )}
+    >
+      <span
+        className={cn(
+          "shrink-0 text-center font-black",
+          phone ? "w-6 text-xl lg:w-[22px] lg:text-base" : "w-[22px] text-base",
+          rank <= 3 ? "text-[#ffcc00]" : phone ? "text-white/60 lg:text-white/55" : "text-white/55",
+        )}
+      >
+        {rank}
+      </span>
+      <Thumbnail game={game} className="h-12 w-12 shrink-0 rounded-[10px]" />
+      <span className="min-w-0 flex-1">
+        <span
+          className={cn(
+            "block truncate",
+            phone ? "text-base font-extrabold lg:text-sm" : "text-sm font-extrabold",
+          )}
+        >
+          {game.title}
+        </span>
+        <span
+          className={cn(
+            "block truncate text-white/65",
+            phone ? "text-[13px] font-semibold text-white/60 lg:text-xs lg:font-normal lg:text-white/65" : "text-xs",
+          )}
+        >
+          {[game.tags[0], game.ratingPct === null ? "No ratings" : `${game.ratingPct}% Rating`]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
+      </span>
+      {right ?? (
+        <span className="shrink-0 text-right text-xs font-extrabold">
+          {formatCount(game.views)}
+          <span className="block text-[11px] font-bold text-white/65">{game.viewsLabel}</span>
+        </span>
+      )}
+    </Link>
+  );
+}
+
+// Friends as a 3-across grid in a panel (desktop home sidebar).
+export function FriendsPanel({ friends, count }: { friends: FriendCard[]; count: number }) {
+  return (
+    <section>
+      <DeskSectionHead title={`Friends (${count})`} href="/protected/friends" linkLabel="View all" />
+      <div className={DESK_PANEL}>
+        {friends.length === 0 ? (
+          <p className="p-4 text-center text-[13px] font-semibold text-white/60">
+            No friends yet.{" "}
+            <Link href="/protected/friends" className="font-bold text-[#ffcc00] underline">
+              Find friends
+            </Link>
+          </p>
+        ) : (
+          <ul className="grid grid-cols-3 gap-2.5 p-3">
+            {friends.slice(0, 12).map((f) => (
+              <li key={f.id} className="min-w-0">
+                <Link
+                  href={`/protected/people/${f.username}`}
+                  className="flex flex-col items-center gap-1.5 rounded-lg p-1 text-xs font-bold transition hover:bg-white/[0.06]"
+                >
+                  {f.avatarUrl ? (
+                    <img
+                      src={f.avatarUrl}
+                      alt=""
+                      className="h-11 w-11 rounded-full border-2 border-white/20 object-cover"
+                    />
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className="grid h-11 w-11 place-items-center rounded-full border-2 border-white/20 bg-[#4d62db] text-[15px] font-black uppercase"
+                    >
+                      {f.username.slice(0, 2)}
+                    </span>
+                  )}
+                  <span className="w-full truncate text-center">{f.displayName ?? f.username}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// The whole desktop home: recommended cards and Popular Now on the left,
+// friends on the right.
+export function DesktopHome({
+  recommended,
+  popular,
+  friends,
+  friendCount,
+}: {
+  recommended: GameCard[];
+  popular: GameCard[];
+  friends: FriendCard[];
+  friendCount: number;
+}) {
+  return (
+    <div className="hidden grid-cols-12 items-start gap-7 lg:grid">
+      <div className="col-span-8">
+        <DeskSectionHead title="Recommended for You" href="/protected/search" />
+        {recommended.length === 0 ? (
+          <EmptyGames />
+        ) : (
+          <ul className="mb-6 grid grid-cols-2 gap-3">
+            {recommended.slice(0, 4).map((g) => (
+              <li key={g.id} className="min-w-0">
+                <GameTile game={g} />
+              </li>
+            ))}
+          </ul>
+        )}
+        <DeskSectionHead title="Popular Now" href="/protected/charts" linkLabel="Charts" />
+        <ol className="flex flex-col gap-2.5">
+          {popular.slice(0, 5).map((g, i) => (
+            <li key={g.id}>
+              <RankRow rank={i + 1} game={g} />
+            </li>
+          ))}
+        </ol>
+      </div>
+      <aside className="sticky top-[76px] col-span-4">
+        <FriendsPanel friends={friends} count={friendCount} />
+      </aside>
     </div>
   );
 }

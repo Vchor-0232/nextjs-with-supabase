@@ -66,3 +66,42 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Rating slider on the Search page (Figma "advanced search"): grey track,
+   yellow fill up to the handle, and the design's yellow handle. */
+.gs-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  background: transparent;
+  cursor: pointer;
+}
+.gs-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #ffcc00 var(--fill, 0%), rgb(255 255 255 / 0.2) var(--fill, 0%));
+}
+.gs-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #ffcc00 var(--fill, 0%), rgb(255 255 255 / 0.2) var(--fill, 0%));
+}
+.gs-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border: 0;
+  background: url("/icons/slider-handle.svg") center / 20px 20px no-repeat;
+}
+.gs-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 0;
+  background: url("/icons/slider-handle.svg") center / 20px 20px no-repeat;
+}
+.gs-range:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+  border-radius: 4px;
+}

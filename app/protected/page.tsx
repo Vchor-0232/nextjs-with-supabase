@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { PageTitle, SectionDivider } from "@/components/home/app-chrome";
 import {
+  DesktopHome,
   FriendsSection,
   GameOfTheWeekSection,
   HomeSkeleton,
@@ -29,15 +30,22 @@ async function HomeContent() {
           Couldn&apos;t load everything: {home.error}
         </p>
       )}
-      <FriendsSection friends={home.friends} count={home.friendCount} />
-      <SectionDivider />
-      {/* Side by side on computers. */}
-      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:items-start lg:gap-6">
+      {/* Phones and tablets: the Figma "homepage" frame. */}
+      <div className="lg:hidden">
+        <FriendsSection friends={home.friends} count={home.friendCount} />
+        <SectionDivider />
         {/* The best-rated game right now (first of the "recommended" list). */}
         <GameOfTheWeekSection game={home.recommended[0] ?? null} />
-        <SectionDivider className="lg:hidden" />
-        <PopularSection games={home.popular} listClassName="md:grid-cols-2 lg:grid-cols-1" />
+        <SectionDivider />
+        <PopularSection games={home.popular.slice(0, 3)} />
       </div>
+      {/* Computers: the Figma desktop prototype. */}
+      <DesktopHome
+        recommended={home.recommended}
+        popular={home.popular}
+        friends={home.friends}
+        friendCount={home.friendCount}
+      />
     </>
   );
 }

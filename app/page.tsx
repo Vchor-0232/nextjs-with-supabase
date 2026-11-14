@@ -27,7 +27,7 @@ async function PopularForVisitors() {
 
   return (
     <PopularSection
-      games={popular}
+      games={popular.slice(0, 3)}
       seeAllHref="/auth/sign-up"
       listClassName="md:grid-cols-2 lg:grid-cols-1"
     />

@@ -19,6 +19,10 @@ export type RobloxGameInfo = {
   iconUrl: string | null;
   screenshotUrls: string[];
   updatedAt: string | null;
+  createdAt: string | null;
+  maxPlayers: number | null;
+  creatorId: number | null;
+  creatorType: "User" | "Group" | null;
 };
 
 export type RobloxLookup =
@@ -179,6 +183,11 @@ export async function fetchRobloxGames(
             iconUrl: iconById.get(universeId) ?? null,
             screenshotUrls: shotsById.get(universeId) ?? [],
             updatedAt: g.updated ?? null,
+            createdAt: g.created ?? null,
+            maxPlayers: g.maxPlayers ?? null,
+            creatorId: g.creator?.id ?? null,
+            creatorType:
+              g.creator?.type === "User" || g.creator?.type === "Group" ? g.creator.type : null,
           },
         });
       }
@@ -198,11 +207,13 @@ type GameDetail = {
   id: number;
   name: string;
   description?: string | null;
-  creator?: { name?: string };
+  creator?: { id?: number; name?: string; type?: string };
   visits?: number;
   playing?: number;
   favoritedCount?: number;
   updated?: string;
+  created?: string;
+  maxPlayers?: number;
 };
 
 // --- Finding small Roblox games to import ------------------------------------
@@ -324,4 +335,22 @@ export async function searchSmallRobloxGames({
     }
   }
   return { games, searched, errors };
+}
+
+// --- Checking who owns a game (Developer page) --------------------------------
+
+/**
+ * True when the Roblox user made the game themselves, or owns the group
+ * that made it. (Roblox doesn't publicly show other group roles' rights, so
+ * group games must be submitted by the group's owner.)
+ */
+export async function ownsRobloxGame(info: RobloxGameInfo, robloxUserId: number) {
+  if (info.creatorType === "User") return info.creatorId === robloxUserId;
+  if (info.creatorType === "Group" && info.creatorId) {
+    const group = await getJson<{ owner?: { userId?: number } | null }>(
+      `https://groups.roblox.com/v1/groups/${info.creatorId}`,
+    );
+    return group.owner?.userId === robloxUserId;
+  }
+  return false;
 }

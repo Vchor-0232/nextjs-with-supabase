@@ -1,4 +1,4 @@
-import { createClient as createAdminClient } from "@supabase/supabase-js";
+import { createClient as createAdminClient, type SupabaseClient } from "@supabase/supabase-js";
 import { fetchRobloxGames, placeIdFromUrl } from "@/lib/roblox";
 import { importSmallRobloxGames, maxVisits } from "@/lib/roblox-import";
 
@@ -95,6 +95,11 @@ export async function GET(request: Request) {
         roblox_updated_at: i.updatedAt,
         synced_at: now,
         sync_error: null,
+        // Columns from the 2026-11-14 migration (dropped below if it hasn't run).
+        max_players: i.maxPlayers,
+        creator_id: i.creatorId,
+        creator_type: i.creatorType,
+        roblox_created_at: i.createdAt,
       });
     } else {
       // Keep the last good numbers; just record what went wrong.
@@ -111,9 +116,7 @@ export async function GET(request: Request) {
   }
 
   const [saveOk, saveErrors] = await Promise.all([
-    okRows.length
-      ? supabase.from("roblox_stats").upsert(okRows)
-      : Promise.resolve({ error: null }),
+    okRows.length ? saveStats(supabase, okRows) : Promise.resolve({ error: null }),
     errorRows.length
       ? supabase
           .from("roblox_stats")
@@ -124,6 +127,23 @@ export async function GET(request: Request) {
   if (saveError) {
     return Response.json({ error: saveError.message }, { status: 500 });
   }
+
+  // Today's numbers for Charts (today / this week / this month). Skipped
+  // until the 2026-11-14 migration has been run.
+  const day = now.slice(0, 10);
+  const { error: dailyError } = okRows.length
+    ? await supabase.from("roblox_stats_daily").upsert(
+        okRows.map((r) => ({
+          game_id: r.game_id,
+          day,
+          visits: r.visits,
+          playing: r.playing,
+          up_votes: r.up_votes,
+          down_votes: r.down_votes,
+        })),
+      )
+    : { error: null };
+  if (dailyError) console.error("Couldn't save daily stats:", dailyError.message);
 
   // Hide imported games at or over the visit limit, going by the latest
   // numbers we have (including games Roblox didn't return today).
@@ -152,6 +172,26 @@ export async function GET(request: Request) {
     hiddenOverLimit: hidden,
     games: games.length,
     synced: okRows.length,
+    dailySnapshot: dailyError ? `not saved: ${dailyError.message}` : day,
     failed: errorRows.map((r) => ({ gameId: r.game_id, error: r.sync_error })),
   });
+}
+
+const NEW_COLUMNS = ["max_players", "creator_id", "creator_type", "roblox_created_at"] as const;
+
+// Saves the stats, leaving out the newer columns if the database doesn't
+// have them yet (the 2026-11-14 migration hasn't been run).
+async function saveStats(supabase: SupabaseClient, rows: Record<string, unknown>[]) {
+  const first = await supabase.from("roblox_stats").upsert(rows);
+  const missingColumn =
+    first.error &&
+    (first.error.code === "PGRST204" || first.error.code === "42703") &&
+    NEW_COLUMNS.some((c) => first.error!.message.includes(c));
+  if (!missingColumn) return first;
+  const older = rows.map((r) => {
+    const copy = { ...r };
+    for (const c of NEW_COLUMNS) delete copy[c];
+    return copy;
+  });
+  return supabase.from("roblox_stats").upsert(older);
 }
