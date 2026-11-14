@@ -1,3 +1,4 @@
+import { Narrow } from "@/components/home/app-chrome";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -30,7 +31,7 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
   ];
 
   return (
-    <>
+    <Narrow>
       <Link
         href="/protected/friends"
         className="mb-2 inline-flex items-center gap-1 px-1 text-sm font-semibold text-neutral-300 hover:text-white"
@@ -88,7 +89,7 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
           <FriendButton me={me} otherId={person.id} otherName={person.username} relation={page.relation} />
         </div>
       </section>
-    </>
+    </Narrow>
   );
 }
 

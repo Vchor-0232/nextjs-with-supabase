@@ -23,7 +23,11 @@ function timeAgo(iso: string) {
 
 function toSpotlight(game: GameDetail): SpotlightGame {
   const shots = game.roblox?.screenshotUrls ?? [];
-  const images = shots.length ? shots : game.thumbnailUrl ? [game.thumbnailUrl] : [];
+  const images = shots.length
+    ? shots
+    : game.thumbnailUrl
+      ? [game.thumbnailUrl]
+      : [];
 
   return {
     title: game.title,
@@ -61,8 +65,12 @@ function GameInfo({ game }: { game: GameDetail }) {
 
   return (
     <>
-      <section className={`${PANEL} mx-0 mb-2.5 mt-2 px-2.5 py-2 shadow-[0_8px_18px_-12px_rgba(0,0,0,0.65)]`}>
-        <h2 className="mb-0.5 text-base font-bold leading-[21px]">Description</h2>
+      <section
+        className={`${PANEL} mx-0 mb-2.5 mt-2 px-2.5 py-2 shadow-[0_8px_18px_-12px_rgba(0,0,0,0.65)]`}
+      >
+        <h2 className="mb-0.5 text-base font-bold leading-[21px]">
+          Description
+        </h2>
         <ExpandableText
           text={game.description?.trim() || "No description yet."}
           className="whitespace-pre-line text-[13px] leading-4 text-white/[0.92]"
@@ -70,7 +78,10 @@ function GameInfo({ game }: { game: GameDetail }) {
       </section>
 
       {game.tags.length > 0 && (
-        <ul aria-label="Game categories" className="mb-2.5 flex flex-wrap gap-[7px]">
+        <ul
+          aria-label="Game categories"
+          className="mb-2.5 flex flex-wrap gap-[7px]"
+        >
           {game.tags.map((tag, i) => (
             <li
               key={tag}
@@ -94,7 +105,8 @@ function GameInfo({ game }: { game: GameDetail }) {
       </p>
 
       <aside className="mb-2.5 rounded-[16px] border border-[#4d62db]/85 bg-[#4d62db]/20 px-3.5 py-[7px] text-center text-[13px] leading-4">
-        Remember to keep comments respectful and to follow our Community Guidelines.
+        Remember to keep comments respectful and to follow our Community
+        Guidelines.
       </aside>
     </>
   );
@@ -114,33 +126,44 @@ export function GameDetailView({
       userId={game.viewer.userId}
       myRating={game.viewer.rating}
     >
-      <GameSpotlight
-        game={toSpotlight(game)}
-        titleAction={
-          <FavoriteButton
-            gameId={game.id}
-            userId={game.viewer.userId}
-            favorited={game.viewer.favorited}
+      {/* Computers: the game on the left, reviews on the right. */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
+        <div>
+          <GameSpotlight
+            game={toSpotlight(game)}
+            titleAction={
+              <FavoriteButton
+                gameId={game.id}
+                userId={game.viewer.userId}
+                favorited={game.viewer.favorited}
+              />
+            }
+            statsBar={
+              <GameStatsBar
+                gameId={game.id}
+                userId={game.viewer.userId}
+                myRating={game.viewer.rating}
+                myVote={game.viewer.vote}
+                avgStars={game.avgStars}
+                starCount={game.starCount}
+                visits={game.roblox?.visits ?? null}
+                robloxLikes={game.roblox?.likes ?? null}
+                robloxDislikes={game.roblox?.dislikes ?? null}
+                gamesproutLikes={game.votes.likes}
+                gamesproutDislikes={game.votes.dislikes}
+              />
+            }
           />
-        }
-        statsBar={
-          <GameStatsBar
+          <GameInfo game={game} />
+        </div>
+        <div className="lg:sticky lg:top-[76px]">
+          <ReviewsSection
             gameId={game.id}
-            userId={game.viewer.userId}
-            myRating={game.viewer.rating}
-            myVote={game.viewer.vote}
-            avgStars={game.avgStars}
-            starCount={game.starCount}
-            visits={game.roblox?.visits ?? null}
-            robloxLikes={game.roblox?.likes ?? null}
-            robloxDislikes={game.roblox?.dislikes ?? null}
-            gamesproutLikes={game.votes.likes}
-            gamesproutDislikes={game.votes.dislikes}
+            reviews={reviews.reviews}
+            total={reviews.total}
           />
-        }
-      />
-      <GameInfo game={game} />
-      <ReviewsSection gameId={game.id} reviews={reviews.reviews} total={reviews.total} />
+        </div>
+      </div>
     </ReviewProvider>
   );
 }

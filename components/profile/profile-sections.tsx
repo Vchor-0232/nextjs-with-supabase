@@ -76,6 +76,12 @@ export function ProfileCard({
         <Pencil className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
         Edit profile
       </Link>
+      <Link
+        href="/protected/developer"
+        className="text-center text-[13px] font-bold text-white/60 underline-offset-2 hover:text-white hover:underline"
+      >
+        Made a Roblox game? Add it to Gamesprout →
+      </Link>
     </section>
   );
 }

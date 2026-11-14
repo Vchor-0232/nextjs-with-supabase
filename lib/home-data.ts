@@ -15,6 +15,16 @@ export type GameCard = {
   viewsLabel: "Visits" | "Views"; // Roblox visits, or views on Gamesprout
   ratingPct: number | null;
   tags: string[];
+  bannerUrl?: string | null; // wide screenshot for big cards (falls back to the icon)
+};
+
+// A game with everything Charts and Search filter and sort by.
+export type GameListing = GameCard & {
+  playing: number | null; // players online at the last sync
+  maxPlayers: number | null; // server size on Roblox
+  ratingCount: number;
+  creator: string | null; // Roblox user or group that made it
+  addedAt: string; // newest first: when it was created on Roblox, else added here
 };
 
 type ProfileRow = {
@@ -39,7 +49,15 @@ type RobloxStatsRow = {
   up_votes: number | string | null;
   down_votes: number | string | null;
   icon_url: string | null;
+  screenshot_urls: string[] | null;
+  playing: number | string | null;
+  creator_name: string | null;
+  max_players?: number | string | null; // added by the 2026-11-14 migration
+  roblox_created_at?: string | null;
 };
+
+const ROBLOX_COLUMNS =
+  "game_id, visits, up_votes, down_votes, icon_url, screenshot_urls, playing, creator_name";
 
 type GameStatsRow = {
   game_id: string;
@@ -126,10 +144,7 @@ async function buildGameCards(supabase: Supabase, games: GameRow[]) {
           .from("game_tags")
           .select("game_id, tags(name)")
           .in("game_id", ids),
-        supabase
-          .from("roblox_stats")
-          .select("game_id, visits, up_votes, down_votes, icon_url")
-          .in("game_id", ids),
+        loadRobloxStats(supabase, ids),
       ])
     : [null, null, null];
 
@@ -179,6 +194,11 @@ async function buildGameCards(supabase: Supabase, games: GameRow[]) {
       ratingCount: robloxLikePct !== null ? up + down : starCount,
       tags: tagsByGame.get(g.id) ?? [],
       createdAt: g.created_at,
+      bannerUrl: roblox?.screenshot_urls?.[0] ?? g.thumbnail_url ?? roblox?.icon_url ?? null,
+      playing: roblox?.playing == null ? null : Number(roblox.playing),
+      maxPlayers: roblox?.max_players == null ? null : Number(roblox.max_players),
+      addedAt: roblox?.roblox_created_at ?? g.created_at,
+      creator: roblox?.creator_name ?? null,
     };
   });
 
@@ -188,6 +208,17 @@ async function buildGameCards(supabase: Supabase, games: GameRow[]) {
   }
 
   return { cards, error: statsRes?.error ?? tagsRes?.error ?? null };
+}
+
+// Reads roblox_stats, including the columns from the 2026-11-14 migration
+// when it has been run (and without them until then).
+async function loadRobloxStats(supabase: Supabase, ids: string[]) {
+  const full = await supabase
+    .from("roblox_stats")
+    .select(`${ROBLOX_COLUMNS}, max_players, roblox_created_at`)
+    .in("game_id", ids);
+  if (!full.error || full.error.code !== "42703") return full;
+  return supabase.from("roblox_stats").select(ROBLOX_COLUMNS).in("game_id", ids);
 }
 
 type RankedCard = Awaited<ReturnType<typeof buildGameCards>>["cards"][number];
@@ -200,6 +231,16 @@ const toCard = (c: RankedCard): GameCard => ({
   viewsLabel: c.viewsLabel,
   ratingPct: c.ratingPct,
   tags: c.tags,
+  bannerUrl: c.bannerUrl,
+});
+
+const toListing = (c: RankedCard): GameListing => ({
+  ...toCard(c),
+  playing: c.playing,
+  maxPlayers: c.maxPlayers,
+  ratingCount: c.ratingCount,
+  creator: c.creator,
+  addedAt: c.addedAt,
 });
 
 // Recommended and Popular Now. Also used by the public home page, so it
@@ -228,13 +269,13 @@ export async function getGameLists() {
         b.ratingCount - a.ratingCount ||
         b.createdAt.localeCompare(a.createdAt),
     )
-    .slice(0, 2);
+    .slice(0, 4);
 
   // Every game, most visited first (the Charts tab shows all of these).
   const byVisits = [...cards].sort(
     (a, b) => b.views - a.views || b.createdAt.localeCompare(a.createdAt),
   );
-  const popular = byVisits.slice(0, 3);
+  const popular = byVisits.slice(0, 5);
 
   const error = gamesRes.error ?? cardsError;
 
@@ -242,7 +283,7 @@ export async function getGameLists() {
     error: error?.message ?? null,
     recommended: recommended.map(toCard),
     popular: popular.map(toCard),
-    all: byVisits.map(toCard),
+    all: byVisits.map(toListing),
   };
 }
 
@@ -365,9 +406,4 @@ export async function getProfilePage(userId: string) {
   };
 }
 
-export function formatCount(count: number) {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
+export { formatCount } from "@/lib/format";
