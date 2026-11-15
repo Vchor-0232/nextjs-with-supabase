@@ -90,11 +90,8 @@ function AppHeader({
             className="flex items-center gap-1.5 lg:gap-2"
             aria-label="Gamesprout home"
           >
-            {/* Computers: the logo sits in a small white tile. */}
-            <span className="lg:grid lg:h-[26px] lg:w-[30px] lg:place-items-center lg:rounded-[8px] lg:bg-white lg:p-0.5">
-              <GamesproutMark className="-mt-1 w-[30px] lg:mt-0 lg:w-full" />
-            </span>
-            <span className="text-base font-black tracking-[-0.5px] text-white [text-shadow:0_0_8px_#ffcc00] lg:text-lg lg:tracking-[-0.02em] lg:[text-shadow:none]">
+            <GamesproutMark className="-mt-1 w-[30px]" />
+            <span className="text-base font-black tracking-[-0.5px] text-white [text-shadow:0_0_8px_#ffcc00] lg:text-lg">
               Gamesprout
             </span>
           </Link>
