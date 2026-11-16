@@ -455,11 +455,13 @@ export function DesktopHome({
   popular,
   friends,
   friendCount,
+  asideExtra,
 }: {
   recommended: GameCard[];
   popular: GameCard[];
   friends: FriendCard[];
   friendCount: number;
+  asideExtra?: React.ReactNode; // shown under Friends (People You May Know)
 }) {
   return (
     <div className="hidden grid-cols-12 items-start gap-7 lg:grid">
@@ -487,6 +489,7 @@ export function DesktopHome({
       </div>
       <aside className="sticky top-[76px] col-span-4">
         <FriendsPanel friends={friends} count={friendCount} />
+        {asideExtra}
       </aside>
     </div>
   );
