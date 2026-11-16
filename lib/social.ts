@@ -44,7 +44,7 @@ export async function getPersonPage(username: string, me: string) {
   const person = row as PersonRow & { bio: string | null; roblox_username: string | null };
   const pair = `and(requester_id.eq.${me},addressee_id.eq.${person.id}),and(requester_id.eq.${person.id},addressee_id.eq.${me})`;
 
-  const [friendshipRes, friendCountRes, followersRes, followingRes] = await Promise.all([
+  const [friendshipRes, friendCountRes, followersRes, followingRes, iFollowRes] = await Promise.all([
     supabase
       .from("friendships")
       .select("requester_id, addressee_id, status")
@@ -65,6 +65,13 @@ export async function getPersonPage(username: string, me: string) {
       .from("follows")
       .select("following_id", { count: "exact", head: true })
       .eq("follower_id", person.id),
+    // Whether you follow them.
+    supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", me)
+      .eq("following_id", person.id)
+      .maybeSingle(),
   ]);
 
   return {
@@ -74,6 +81,7 @@ export async function getPersonPage(username: string, me: string) {
     relation: relationFrom(me, person.id, friendshipRes.data as FriendshipRow | null),
     followers: followersRes.count ?? 0,
     following: followingRes.count ?? 0,
+    youFollow: Boolean(iFollowRes.data),
     // Friendships are private to the two people in them, so for someone else
     // this only counts your friendship with them. Hide it unless it's you.
     friendCount: me === person.id ? (friendCountRes.count ?? 0) : null,

@@ -2,7 +2,8 @@ import { Narrow } from "@/components/home/app-chrome";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-import { ArrowLeft, MessageCircle } from "lucide-react";
+import { ArrowLeft, Lock, MessageCircle } from "lucide-react";
+import { FollowButton } from "@/components/social/follow-button";
 import { FriendButton } from "@/components/social/friend-button";
 import { PersonAvatar } from "@/components/social/person-avatar";
 import { formatCount } from "@/lib/home-data";
@@ -39,7 +40,7 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
         <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Friends
       </Link>
 
-      <section className="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+      <section className="rounded-[16px] border border-white/10 bg-white/[0.07] p-4 shadow-[0_8px_22px_-12px_rgba(0,0,0,0.65)]">
         <div className="flex items-center gap-4">
           <PersonAvatar person={person} size="lg" />
           <div className="min-w-0">
@@ -68,22 +69,44 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
           ))}
         </dl>
 
-        <div className="flex flex-col gap-3">
-          {page.relation === "friend" ? (
-            <Link
-              href={`/protected/messages/${person.username}`}
-              className="flex h-11 items-center justify-center gap-2 rounded-full bg-[#ffcc00] font-bold text-black shadow-[0_4px_8px_rgba(0,0,0,0.45)] transition hover:bg-[#ffd84d]"
-            >
-              <MessageCircle className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
-              Message
-            </Link>
-          ) : (
-            <p className="rounded-xl bg-neutral-900 px-3 py-2 text-center text-sm text-neutral-400">
+        {/* Follow and Message side by side, then the friend button. */}
+        <div className="flex flex-col gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5">
+            <FollowButton
+              me={me}
+              otherId={person.id}
+              otherName={person.username}
+              following={page.youFollow}
+            />
+            {page.relation === "friend" ? (
+              <Link
+                href={`/protected/messages/${person.username}`}
+                className="flex h-10 items-center justify-center gap-1.5 rounded-[20px] bg-[#ffcc00] text-sm font-extrabold text-black shadow-[0_0_8px_rgba(255,204,0,0.6)] transition hover:bg-[#ffd84d]"
+              >
+                <MessageCircle className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+                Message
+              </Link>
+            ) : (
+              // Only friends can message each other (a database rule that
+              // keeps strangers out of people's inboxes).
+              <button
+                type="button"
+                disabled
+                aria-describedby="message-note"
+                className="flex h-10 cursor-not-allowed items-center justify-center gap-1.5 rounded-[20px] border border-white/15 bg-white/[0.06] text-sm font-extrabold text-white/50"
+              >
+                <Lock className="h-4 w-4" aria-hidden="true" />
+                Message
+              </button>
+            )}
+          </div>
+          {page.relation !== "friend" && (
+            <p id="message-note" className="text-center text-xs font-semibold text-white/60">
               {page.relation === "received"
                 ? `@${person.username} wants to be friends. Accept to start chatting.`
                 : page.relation === "sent"
-                  ? "Request sent. You can chat once they accept."
-                  : `Add @${person.username} as a friend to chat.`}
+                  ? "Request sent. You can message once they accept."
+                  : `Add @${person.username} as a friend to send messages.`}
             </p>
           )}
           <FriendButton me={me} otherId={person.id} otherName={person.username} relation={page.relation} />
