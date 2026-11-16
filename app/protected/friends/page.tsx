@@ -6,7 +6,8 @@ import { Narrow, PageTitle, SectionHeader } from "@/components/home/app-chrome";
 import { FriendButton } from "@/components/social/friend-button";
 import { PeopleSearch } from "@/components/social/people-search";
 import { PersonAvatar } from "@/components/social/person-avatar";
-import { getFriendsPage } from "@/lib/social";
+import { PeopleYouMayKnow } from "@/components/social/people-you-may-know";
+import { getFriendsPage, getSuggestions } from "@/lib/social";
 import { createClient } from "@/lib/supabase/server";
 
 const panel = "rounded-2xl border border-neutral-800 bg-neutral-950";
@@ -26,7 +27,11 @@ async function FriendsContent() {
   const me = auth?.claims?.sub;
   if (!me) redirect("/auth/login");
 
-  const { friends, received, sent, error } = await getFriendsPage(me);
+  const [{ friends, received, sent, error }, suggestions] = await Promise.all([
+    getFriendsPage(me),
+    getSuggestions(me),
+  ]);
+  const suggest = <PeopleYouMayKnow me={me} people={suggestions} />;
 
   return (
     <>
@@ -56,11 +61,14 @@ async function FriendsContent() {
         </section>
       )}
 
+      {/* No friends yet: suggestions come first. */}
+      {friends.length === 0 && suggest}
+
       <section className="mb-4">
         <SectionHeader title={`Friends (${friends.length})`} />
         {friends.length === 0 ? (
           <p className={`${panel} px-4 py-6 text-center text-sm text-neutral-400`}>
-            No friends yet. Search for people below and send them a request.
+            No friends yet. Add someone you may know, or search for people below.
           </p>
         ) : (
           <ul className={`${panel} divide-y divide-neutral-800`}>
@@ -106,6 +114,8 @@ async function FriendsContent() {
           </ul>
         )}
       </section>
+
+      {friends.length > 0 && suggest}
 
       <section className="mb-4">
         <SectionHeader title="Find Friends" />

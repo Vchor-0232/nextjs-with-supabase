@@ -8,7 +8,9 @@ import {
   HomeSkeleton,
   PopularSection,
 } from "@/components/home/home-sections";
+import { PeopleYouMayKnowPanel } from "@/components/social/people-you-may-know";
 import { getHomeData } from "@/lib/home-data";
+import { getSuggestions } from "@/lib/social";
 import { createClient } from "@/lib/supabase/server";
 
 async function HomeContent() {
@@ -18,7 +20,8 @@ async function HomeContent() {
     redirect("/auth/login");
   }
 
-  const home = await getHomeData(data.claims.sub);
+  const me = data.claims.sub;
+  const [home, suggestions] = await Promise.all([getHomeData(me), getSuggestions(me, 4)]);
 
   return (
     <>
@@ -45,6 +48,7 @@ async function HomeContent() {
         popular={home.popular}
         friends={home.friends}
         friendCount={home.friendCount}
+        asideExtra={<PeopleYouMayKnowPanel me={me} people={suggestions} />}
       />
     </>
   );

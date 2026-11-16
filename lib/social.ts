@@ -197,3 +197,63 @@ export async function getChat(me: string, username: string) {
 
   return { ...page, messages, error: error?.message ?? null };
 }
+
+// --- People you may know -------------------------------------------------------
+
+export type Suggestion = Person & {
+  mutualFriends: number;
+  sharedGames: number;
+  followsYou: boolean;
+};
+
+// Why someone is suggested, in a few words.
+export function suggestionReason(s: Suggestion) {
+  if (s.mutualFriends) return `${s.mutualFriends} mutual friend${s.mutualFriends === 1 ? "" : "s"}`;
+  if (s.sharedGames) return `Likes ${s.sharedGames} of your games`;
+  if (s.followsYou) return "Follows you";
+  return "New to Gamesprout";
+}
+
+/**
+ * People the signed-in person might want to add, best first (see
+ * supabase/migrations/20261116000000_people_you_may_know.sql). Until that
+ * database update is run, falls back to the newest members.
+ */
+export async function getSuggestions(me: string, limit = 12): Promise<Suggestion[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("people_you_may_know", { max_results: limit });
+  if (!error) {
+    return (
+      (data ?? []) as (PersonRow & { mutual_friends: number; shared_games: number; follows_you: boolean })[]
+    ).map((r) => ({
+      ...toPerson(r),
+      mutualFriends: r.mutual_friends,
+      sharedGames: r.shared_games,
+      followsYou: r.follows_you,
+    }));
+  }
+
+  // Fallback: newest members you aren't connected to yet.
+  const [linksRes, peopleRes] = await Promise.all([
+    supabase
+      .from("friendships")
+      .select("requester_id, addressee_id")
+      .or(`requester_id.eq.${me},addressee_id.eq.${me}`),
+    supabase
+      .from("profiles")
+      .select(PERSON_COLUMNS)
+      .neq("id", me)
+      .order("created_at", { ascending: false })
+      .limit(limit + 50),
+  ]);
+  const linked = new Set(
+    (linksRes.data ?? []).flatMap((l: { requester_id: string; addressee_id: string }) => [
+      l.requester_id,
+      l.addressee_id,
+    ]),
+  );
+  return ((peopleRes.data ?? []) as PersonRow[])
+    .filter((p) => !linked.has(p.id))
+    .slice(0, limit)
+    .map((p) => ({ ...toPerson(p), mutualFriends: 0, sharedGames: 0, followsYou: false }));
+}
