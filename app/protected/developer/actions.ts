@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { fetchRobloxGames, ownsRobloxGame, placeIdFromUrl, type RobloxGameInfo } from "@/lib/roblox";
+import { importSmallRobloxGames } from "@/lib/roblox-import";
+import { syncRobloxStats } from "@/lib/roblox-sync";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -236,4 +238,42 @@ export async function reviewSubmission(gameId: string, approve: boolean): Promis
   if (sub.error || game.error) return { ok: false, error: "Couldn't save the review. Try again." };
   revalidatePath("/protected/developer");
   return { ok: true, data: null };
+}
+
+// Admins: search Roblox for more small games right now (instead of waiting
+// for the daily update), then fill in their numbers and pictures.
+export async function importMoreGames(): Promise<
+  Result<{ imported: number; found: number; searched: string[]; note: string | null }>
+> {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  if (!data?.claims) return { ok: false, error: "Please log in again." };
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", data.claims.sub)
+    .maybeSingle();
+  if (!me?.is_admin) return { ok: false, error: "Only admins can import games." };
+
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, error: "Imports aren't set up on this server yet." };
+
+  try {
+    // Up to ~35s of searching, leaving time to sync the new games.
+    const result = await importSmallRobloxGames(admin, { searchMs: 35_000 });
+    if (result.newGameIds.length) await syncRobloxStats(admin, result.newGameIds);
+    revalidatePath("/protected", "layout");
+    return {
+      ok: true,
+      data: {
+        imported: result.imported,
+        found: "smallGamesFound" in result ? (result.smallGamesFound ?? 0) : 0,
+        searched: "searched" in result ? (result.searched ?? []) : [],
+        note: "note" in result ? (result.note ?? null) : null,
+      },
+    };
+  } catch (e) {
+    console.error("Manual import failed:", e);
+    return { ok: false, error: "Roblox didn't answer in time. Try again in a minute." };
+  }
 }
