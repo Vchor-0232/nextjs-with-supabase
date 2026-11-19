@@ -9,6 +9,7 @@ import {
   PillInput,
 } from "@/components/auth/auth-ui";
 import { SocialLogin } from "@/components/auth/social-login";
+import { PasswordInput } from "@/components/auth/password-input";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -63,12 +64,13 @@ export function LoginForm() {
             placeholder="Username / Email / Phone"
             autoComplete="username"
             autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             required
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
           />
-          <PillInput
-            type="password"
+          <PasswordInput
             placeholder="Password"
             autoComplete="current-password"
             required
