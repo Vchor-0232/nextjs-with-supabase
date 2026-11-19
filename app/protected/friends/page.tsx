@@ -5,7 +5,9 @@ import { MessageCircle } from "lucide-react";
 import { Narrow, PageTitle, SectionHeader } from "@/components/home/app-chrome";
 import { FriendButton } from "@/components/social/friend-button";
 import { PeopleSearch } from "@/components/social/people-search";
+import { OnlineDot } from "@/components/social/online-dot";
 import { PersonAvatar } from "@/components/social/person-avatar";
+import { isOnline } from "@/lib/presence-shared";
 import { PeopleYouMayKnow } from "@/components/social/people-you-may-know";
 import { getFriendsPage, getSuggestions } from "@/lib/social";
 import { createClient } from "@/lib/supabase/server";
@@ -78,6 +80,7 @@ async function FriendsContent() {
                 <Link href={`/protected/people/${f.username}`} className="flex min-w-0 flex-1 items-center gap-3">
                   <span className="relative">
                     <PersonAvatar person={f} />
+                    {isOnline(f.lastSeen) && <OnlineDot />}
                     {f.unread > 0 && (
                       <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#ffcc00] px-1 text-[11px] font-extrabold text-black">
                         {f.unread > 9 ? "9+" : f.unread}

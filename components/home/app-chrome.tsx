@@ -4,6 +4,7 @@ import { ArrowLeft, Search } from "lucide-react";
 import { GamesproutMark } from "@/components/gamesprout-mark";
 import { BottomNav, DesktopNav } from "@/components/home/bottom-nav";
 import { NotificationsButton } from "@/components/home/notifications";
+import { PresencePing } from "@/components/home/presence-ping";
 import { cn } from "@/lib/utils";
 
 // Shared look from the Figma file (homepage, profile, game page frames):
@@ -32,6 +33,7 @@ export function AppChrome({
         {children}
       </main>
       {variant === "app" ? <BottomNav /> : <PublicBottomBar />}
+      {variant === "app" && <PresencePing />}
     </div>
   );
 }

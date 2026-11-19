@@ -44,7 +44,7 @@ function Value({ row, period, hasData }: { row: ChartRow; period: Period; hasDat
 
 async function Charts({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   const period = toPeriod((await searchParams).period);
-  const { rows, error, hasData, total, highestRated } = await getCharts(period);
+  const { rows, error, hasData, partialDays, total, highestRated } = await getCharts(period);
 
   return (
     <>
@@ -83,6 +83,12 @@ async function Charts({ searchParams }: { searchParams: Promise<{ period?: strin
       {error && (
         <p role="alert" className="mb-3 rounded-xl bg-red-950/70 px-3 py-2 text-sm text-red-100">
           Couldn&apos;t load everything: {error}
+        </p>
+      )}
+      {partialDays !== null && (
+        <p className="mb-3 rounded-[16px] border border-[#4d62db]/85 bg-[#4d62db]/20 px-3.5 py-2 text-[13px]">
+          Based on the last {partialDays} day{partialDays === 1 ? "" : "s"} so far. This fills in to a
+          full {period === "week" ? "week" : "month"} as the daily update runs.
         </p>
       )}
       {!hasData && (

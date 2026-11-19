@@ -7,6 +7,7 @@ import { FollowButton } from "@/components/social/follow-button";
 import { FriendButton } from "@/components/social/friend-button";
 import { PersonAvatar } from "@/components/social/person-avatar";
 import { formatCount } from "@/lib/home-data";
+import { isOnline, presenceText } from "@/lib/presence-shared";
 import { getPersonPage } from "@/lib/social";
 import { createClient } from "@/lib/supabase/server";
 
@@ -48,6 +49,19 @@ async function PersonContent({ params }: { params: Promise<{ username: string }>
               {name}
             </h1>
             <p className="truncate text-sm text-neutral-400">@{person.username}</p>
+            {page.relation === "friend" && page.lastSeen && (
+              <p
+                className={`flex items-center gap-1.5 truncate text-[13px] font-bold ${
+                  isOnline(page.lastSeen) ? "text-[#2bb673]" : "text-white/50"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-2 w-2 shrink-0 rounded-full ${isOnline(page.lastSeen) ? "bg-[#2bb673]" : "bg-white/40"}`}
+                />
+                {presenceText(page.lastSeen)}
+              </p>
+            )}
             {page.robloxUsername && (
               <p className="truncate text-xs font-semibold text-[#ffcc00]">
                 Roblox: {page.robloxUsername}

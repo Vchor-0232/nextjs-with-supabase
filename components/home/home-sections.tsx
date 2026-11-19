@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Gamepad2, ThumbsUp } from "lucide-react";
 import { PANEL, SectionHeader } from "@/components/home/app-chrome";
+import { OnlineDot } from "@/components/social/online-dot";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@/lib/format";
 import type { FriendCard, GameCard } from "@/lib/home-data";
@@ -61,7 +62,10 @@ export function FriendsSection({
                     size === "home" ? "gap-1" : "gap-0.5",
                   )}
                 >
-                  <Avatar friend={f} size={size === "home" ? 52 : 44} />
+                  <span className="relative">
+                    <Avatar friend={f} size={size === "home" ? 52 : 44} />
+                    {f.online && <OnlineDot />}
+                  </span>
                   <span className="w-full truncate text-center text-[13px] font-bold leading-[18px]">
                     {f.displayName ?? f.username}
                   </span>
@@ -423,20 +427,23 @@ export function FriendsPanel({ friends, count }: { friends: FriendCard[]; count:
                   href={`/protected/people/${f.username}`}
                   className="flex flex-col items-center gap-1.5 rounded-lg p-1 text-xs font-bold transition hover:bg-white/[0.06]"
                 >
-                  {f.avatarUrl ? (
-                    <img
-                      src={f.avatarUrl}
-                      alt=""
-                      className="h-11 w-11 rounded-full border-2 border-white/20 object-cover"
-                    />
-                  ) : (
-                    <span
-                      aria-hidden="true"
-                      className="grid h-11 w-11 place-items-center rounded-full border-2 border-white/20 bg-[#4d62db] text-[15px] font-black uppercase"
-                    >
-                      {f.username.slice(0, 2)}
-                    </span>
-                  )}
+                  <span className="relative">
+                    {f.avatarUrl ? (
+                      <img
+                        src={f.avatarUrl}
+                        alt=""
+                        className="h-11 w-11 rounded-full border-2 border-white/20 object-cover"
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="grid h-11 w-11 place-items-center rounded-full border-2 border-white/20 bg-[#4d62db] text-[15px] font-black uppercase"
+                      >
+                        {f.username.slice(0, 2)}
+                      </span>
+                    )}
+                    {f.online && <OnlineDot className="h-3 w-3" />}
+                  </span>
                   <span className="w-full truncate text-center">{f.displayName ?? f.username}</span>
                 </Link>
               </li>
