@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AvatarPicker } from "@/components/profile/avatar-picker";
 import { createClient } from "@/lib/supabase/client";
 import type { MyProfile } from "@/lib/home-data";
 
@@ -31,6 +32,7 @@ export function EditProfileForm({
   const [robloxUsername, setRobloxUsername] = useState(
     profile?.roblox_username ?? "",
   );
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -71,6 +73,7 @@ export function EditProfileForm({
           display_name: displayName.trim() || null,
           bio: bio.trim() || null,
           roblox_username: roblox || null,
+          avatar_url: avatarUrl,
         })
         .eq("id", userId)
         .select("id");
@@ -95,6 +98,13 @@ export function EditProfileForm({
       onSubmit={save}
       className="flex flex-col gap-4 rounded-2xl border border-neutral-800 bg-neutral-950 p-4"
     >
+      <AvatarPicker
+        userId={userId}
+        username={username}
+        value={avatarUrl}
+        onChange={setAvatarUrl}
+      />
+
       <div>
         <label htmlFor="display-name" className={label}>
           Display name
