@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AuthButton, AuthMessage, AuthPrompt, PillInput } from "@/components/auth/auth-ui";
+import { AuthButton, AuthMessage, AuthPrompt } from "@/components/auth/auth-ui";
 import { ResetSteps } from "@/components/auth/reset-steps";
+import { PasswordInput } from "@/components/auth/password-input";
 import { createClient } from "@/lib/supabase/client";
 
 // Step 3: the reset email's link signs you in and lands here to pick a new
@@ -49,16 +50,14 @@ export function UpdatePasswordForm() {
     <form onSubmit={onSubmit} className="flex flex-col">
       <ResetSteps at={2} />
       <div className="flex flex-col gap-3.5">
-        <PillInput
-          type="password"
+        <PasswordInput
           placeholder="New password"
           autoComplete="new-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <PillInput
-          type="password"
+        <PasswordInput
           placeholder="Type it again"
           autoComplete="new-password"
           required

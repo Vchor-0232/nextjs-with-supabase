@@ -8,6 +8,7 @@ import {
   PillInput,
 } from "@/components/auth/auth-ui";
 import { SocialLogin } from "@/components/auth/social-login";
+import { PasswordInput } from "@/components/auth/password-input";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,6 +90,8 @@ export function SignUpForm() {
           placeholder="Username"
           autoComplete="username"
           autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           minLength={3}
           maxLength={30}
@@ -105,16 +108,14 @@ export function SignUpForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <PillInput
-          type="password"
+        <PasswordInput
           placeholder="Password"
           autoComplete="new-password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <PillInput
-          type="password"
+        <PasswordInput
           placeholder="Confirm password"
           autoComplete="new-password"
           required
