@@ -12,10 +12,17 @@ import { cn } from "@/lib/utils";
 // "avatars" storage bucket under your own folder (see
 // supabase/migrations/20261119000000_avatar_uploads.sql).
 
+// 1–12: sprout buddies; 13: controller; 14: cat; 15: developer.
 export const PRESET_AVATARS = Array.from(
-  { length: 12 },
+  { length: 15 },
   (_, i) => `/avatars/sprout-${String(i + 1).padStart(2, "0")}.svg`,
 );
+
+const AVATAR_NAMES: Record<number, string> = {
+  12: "Controller avatar",
+  13: "Cat avatar",
+  14: "Developer avatar",
+};
 
 const MAX_BYTES = 10 * 1024 * 1024; // before shrinking
 const TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -158,7 +165,7 @@ export function AvatarPicker({
       )}
 
       <p className="text-xs font-bold text-white/70">Or pick a Gamesprout avatar:</p>
-      <div role="radiogroup" aria-label="Gamesprout avatars" className="grid grid-cols-6 gap-2">
+      <div role="radiogroup" aria-label="Gamesprout avatars" className="grid grid-cols-5 gap-2">
         {PRESET_AVATARS.map((src, i) => {
           const on = value === src;
           return (
@@ -167,7 +174,7 @@ export function AvatarPicker({
               type="button"
               role="radio"
               aria-checked={on}
-              aria-label={`Avatar ${i + 1}`}
+              aria-label={AVATAR_NAMES[i] ?? `Avatar ${i + 1}`}
               onClick={() => onChange(src)}
               className={cn(
                 "relative aspect-square rounded-full transition hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white",
