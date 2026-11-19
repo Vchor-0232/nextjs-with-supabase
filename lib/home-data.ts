@@ -1,3 +1,5 @@
+import { getPresence } from "@/lib/presence";
+import { isOnline } from "@/lib/presence-shared";
 import { createClient } from "@/lib/supabase/server";
 
 export type FriendCard = {
@@ -5,6 +7,7 @@ export type FriendCard = {
   username: string;
   displayName: string | null;
   avatarUrl: string | null;
+  online?: boolean;
 };
 
 export type GameCard = {
@@ -120,6 +123,11 @@ export async function getFriends(userId: string, limit = 12) {
       avatarUrl: other.avatar_url,
     };
   });
+
+  // Online friends first.
+  const seen = await getPresence(friends.map((f) => f.id));
+  for (const f of friends) f.online = isOnline(seen.get(f.id));
+  friends.sort((a, b) => Number(b.online) - Number(a.online));
 
   return {
     error: res.error?.message ?? null,

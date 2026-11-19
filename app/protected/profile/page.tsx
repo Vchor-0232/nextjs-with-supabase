@@ -7,6 +7,7 @@ import {
 } from "@/components/home/home-sections";
 import { BadgesSection, ProfileCard } from "@/components/profile/profile-sections";
 import { getProfilePage } from "@/lib/home-data";
+import { getShowOnline } from "@/lib/presence";
 import { createClient } from "@/lib/supabase/server";
 
 async function ProfileContent() {
@@ -14,7 +15,10 @@ async function ProfileContent() {
   const { data, error } = await supabase.auth.getClaims();
   if (error || !data?.claims) redirect("/auth/login");
 
-  const page = await getProfilePage(data.claims.sub);
+  const [page, showOnline] = await Promise.all([
+    getProfilePage(data.claims.sub),
+    getShowOnline(data.claims.sub),
+  ]);
 
   return (
     <>
@@ -36,6 +40,7 @@ async function ProfileContent() {
               friendCount={page.friendCount}
               followers={page.followers}
               following={page.following}
+              showOnline={showOnline}
             />
           </div>
           <div className="order-4">

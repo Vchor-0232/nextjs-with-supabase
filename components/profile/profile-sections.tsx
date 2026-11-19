@@ -11,11 +11,13 @@ export function ProfileCard({
   friendCount,
   followers,
   following,
+  showOnline = null,
 }: {
   profile: MyProfile | null;
   friendCount: number;
   followers: number;
   following: number;
+  showOnline?: boolean | null; // null until the online-status database update
 }) {
   const username = profile?.username ?? "player";
   const name = profile?.display_name?.trim() || username;
@@ -38,8 +40,16 @@ export function ProfileCard({
         <div className="flex min-w-0 flex-col gap-[3px]">
           <p className="truncate text-base font-extrabold leading-[22px]">{name}</p>
           <p className="truncate text-[13px] font-bold leading-[18px] text-white/60">@{username}</p>
-          {/* The design's yellow status line. We don't track who's online
-              yet, so it shows the player's Roblox name when they've added one. */}
+          {/* The design's status line. You're on the site, so you're online
+              (your friends see it unless you've hidden it in Settings). */}
+          {showOnline !== null && (
+            <p className="flex items-center gap-[5px] truncate text-[13px] font-bold leading-[18px] text-[#ffcc00]">
+              <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#ffcc00]" />
+              {showOnline ? "Online • Ready to play" : (
+                <span className="text-white/50">Online status hidden</span>
+              )}
+            </p>
+          )}
           {profile?.roblox_username && (
             <p className="flex items-center gap-[5px] truncate text-[13px] font-bold leading-[18px] text-[#ffcc00]">
               <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#ffcc00]" />

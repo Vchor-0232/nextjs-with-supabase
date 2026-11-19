@@ -61,47 +61,61 @@ export async function getCharts(period: Period) {
   };
   const daysAgo = (n: number) => isoDay(new Date(today.getTime() - n * DAY));
 
+  // The first snapshot we have for a game.
+  const first = (gameId: string) => history.get(gameId)?.[0] ?? null;
+
+  // Days of history so far (from the oldest snapshot to today).
+  let oldest: string | null = null;
+  for (const rows of history.values()) if (rows[0] && (!oldest || rows[0].day < oldest)) oldest = rows[0].day;
+  const daysSoFar = oldest ? Math.round((Date.parse(isoDay(today)) - Date.parse(oldest)) / DAY) : 0;
+
   // The ranking value now (offset 0) or as of yesterday (offset 1).
-  const valueFor = (g: GameListing, offset: 0 | 1): number | null => {
+  const valueFor = (p: Period, g: GameListing, offset: 0 | 1): number | null => {
     const end = offset === 0 ? null : on(g.id, daysAgo(1));
     if (offset === 1 && !end) return null;
-    if (period === "all") return offset === 0 ? g.views : Number(end!.visits ?? 0);
-    if (period === "today") return offset === 0 ? g.playing : end!.playing;
-    const span = period === "week" ? 7 : 30;
-    const start = on(g.id, daysAgo(span + offset));
+    if (p === "all") return offset === 0 ? g.views : Number(end!.visits ?? 0);
+    if (p === "today") return offset === 0 ? g.playing : end!.playing;
+    // Visits gained over the week/month. Until there's a full week or month
+    // of snapshots, count from the oldest one we have.
+    const span = p === "week" ? 7 : 30;
+    const endDay = offset === 0 ? isoDay(today) : end!.day;
+    let start = on(g.id, daysAgo(span + offset));
+    if (!start) {
+      const f = first(g.id);
+      start = f && f.day < endDay ? f : null;
+    }
     const endVisits = offset === 0 ? g.views : Number(end!.visits ?? 0);
     if (!start || start.visits == null) return null;
     return Math.max(0, endVisits - Number(start.visits));
   };
 
-  const rank = (offset: 0 | 1) => {
-    const scored = all.map((g) => ({ g, v: valueFor(g, offset) }));
-    scored.sort(
-      (a, b) => (b.v ?? -1) - (a.v ?? -1) || b.g.views - a.g.views,
-    );
+  const rank = (p: Period, offset: 0 | 1) => {
+    const scored = all.map((g) => ({ g, v: valueFor(p, g, offset) }));
+    scored.sort((a, b) => (b.v ?? -1) - (a.v ?? -1) || b.g.views - a.g.views);
     return scored;
   };
 
-  const now = rank(0);
-  // Weekly and monthly ranks need a week or a month of daily snapshots.
-  const hasData = now.some((r) => r.v !== null);
+  // No usable history for this range yet: rank by all-time visits instead
+  // (still with arrows, if yesterday's numbers exist).
+  const hasData = rank(period, 0).some((r) => r.v !== null);
+  const used: Period = hasData ? period : "all";
+
+  const now = rank(used, 0);
   const before = new Map(
-    rank(1)
+    rank(used, 1)
       .filter((r) => r.v !== null)
       .map((r, i) => [r.g.id, i + 1]),
   );
 
-  const rows: ChartRow[] = (hasData ? now : rank(0).map((r) => ({ ...r, v: r.g.views }))).map(
-    (r, i) => {
-      const prev = before.get(r.g.id);
-      return {
-        game: r.g,
-        rank: i + 1,
-        value: r.v,
-        change: hasData && prev !== undefined && r.v !== null ? prev - (i + 1) : null,
-      };
-    },
-  );
+  const rows: ChartRow[] = now.map((r, i) => {
+    const prev = before.get(r.g.id);
+    return {
+      game: r.g,
+      rank: i + 1,
+      value: r.v,
+      change: prev !== undefined && r.v !== null ? prev - (i + 1) : null,
+    };
+  });
 
   const rated = all.filter((g) => g.ratingPct !== null);
   const highestRated = rated.sort((a, b) => b.ratingPct! - a.ratingPct! || b.ratingCount - a.ratingCount)[0] ?? null;
@@ -109,9 +123,15 @@ export async function getCharts(period: Period) {
   return {
     error,
     rows,
-    // False when there isn't enough history yet for this range (the list
+    // False when there isn't any history yet for this range (the list
     // then falls back to total visits).
     hasData,
+    // Week/month tabs count from the oldest snapshot until they have a
+    // full week/month: how many days that is.
+    partialDays:
+      hasData && (period === "week" || period === "month") && daysSoFar < (period === "week" ? 7 : 30)
+        ? Math.max(1, daysSoFar)
+        : null,
     total: rows.reduce((sum, r) => sum + (r.value ?? 0), 0),
     highestRated,
   };

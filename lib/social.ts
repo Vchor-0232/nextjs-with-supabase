@@ -1,3 +1,4 @@
+import { getPresence } from "@/lib/presence";
 import { createClient } from "@/lib/supabase/server";
 
 // Friends, friend requests and one-on-one chats.
@@ -79,6 +80,8 @@ export async function getPersonPage(username: string, me: string) {
     bio: person.bio,
     robloxUsername: person.roblox_username,
     relation: relationFrom(me, person.id, friendshipRes.data as FriendshipRow | null),
+    // Only friends who share their status get one (the database decides).
+    lastSeen: (await getPresence([person.id])).get(person.id) ?? null,
     followers: followersRes.count ?? 0,
     following: followingRes.count ?? 0,
     youFollow: Boolean(iFollowRes.data),
@@ -91,6 +94,7 @@ export async function getPersonPage(username: string, me: string) {
 export type FriendListItem = Person & {
   lastMessage: { body: string; fromMe: boolean; createdAt: string } | null;
   unread: number;
+  lastSeen: string | null; // for the online dot (friends who share it)
 };
 
 // Everything on the Friends page: requests, friends (with their latest
@@ -144,13 +148,21 @@ export async function getFriendsPage(me: string) {
   for (const r of rows) {
     const other = toPerson(r.requester_id === me ? r.addressee : r.requester);
     if (r.status === "accepted") {
-      friends.push({ ...other, lastMessage: latest.get(other.id) ?? null, unread: unread.get(other.id) ?? 0 });
+      friends.push({
+        ...other,
+        lastMessage: latest.get(other.id) ?? null,
+        unread: unread.get(other.id) ?? 0,
+        lastSeen: null,
+      });
     } else if (r.requester_id === me) {
       sent.push(other);
     } else {
       received.push(other);
     }
   }
+
+  const seen = await getPresence(friends.map((f) => f.id));
+  for (const f of friends) f.lastSeen = seen.get(f.id) ?? null;
 
   // Friends you've talked to most recently first, then everyone else A–Z.
   friends.sort((a, b) => {
