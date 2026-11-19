@@ -11,8 +11,10 @@ const KEYWORDS = [
   "detective", "space", "pet", "building", "art", "music",
   "rhythm", "platformer", "co-op", "survival", "cozy", "minigames",
 ];
-const KEYWORDS_PER_DAY = 4;
-const DEFAULT_PER_DAY = 25;
+// Each run searches 8 keywords, 3 pages each (about 2x what it used to).
+const KEYWORDS_PER_RUN = 8;
+const PAGES_PER_KEYWORD = 3;
+const DEFAULT_PER_RUN = 40;
 export const DEFAULT_MAX_VISITS = 100_000;
 
 export function maxVisits() {
@@ -22,9 +24,9 @@ export function maxVisits() {
 
 // A random few keywords per run, so each run (daily, or by hand) finds a
 // different mix of games.
-function pickKeywords() {
+function pickKeywords(count = KEYWORDS_PER_RUN) {
   const shuffled = [...KEYWORDS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, KEYWORDS_PER_DAY);
+  return shuffled.slice(0, count);
 }
 
 const slugify = (s: string) =>
@@ -35,12 +37,24 @@ const slugify = (s: string) =>
  * owned by the first admin profile. The sync then fills in their numbers.
  * Needs the secret-key client, since it writes as no particular user.
  */
-export async function importSmallRobloxGames(supabase: SupabaseClient) {
+export async function importSmallRobloxGames(
+  supabase: SupabaseClient,
+  {
+    // How long to keep searching Roblox. The daily job leaves time for the
+    // stats sync after it; Vercel stops a run at 60 seconds.
+    searchMs = 30_000,
+  }: { searchMs?: number } = {},
+) {
   const perDay = Number(
-    process.env.ROBLOX_IMPORT_PER_DAY ?? process.env.ROBLOX_IMPORT_PER_LIST ?? DEFAULT_PER_DAY,
+    process.env.ROBLOX_IMPORT_PER_DAY ?? process.env.ROBLOX_IMPORT_PER_LIST ?? DEFAULT_PER_RUN,
   );
   if (!Number.isFinite(perDay) || perDay <= 0) {
-    return { imported: 0, note: "Import turned off (ROBLOX_IMPORT_PER_DAY=0)", errors: [] };
+    return {
+      imported: 0,
+      newGameIds: [] as string[],
+      note: "Import turned off (ROBLOX_IMPORT_PER_DAY=0)",
+      errors: [],
+    };
   }
 
   // Imported games need an owner in profiles; we use the first admin.
@@ -56,6 +70,7 @@ export async function importSmallRobloxGames(supabase: SupabaseClient) {
   if (!owner) {
     return {
       imported: 0,
+      newGameIds: [] as string[],
       note: "No admin profile yet. Set is_admin = true on one profile to turn on imports.",
       errors: [],
     };
@@ -66,7 +81,8 @@ export async function importSmallRobloxGames(supabase: SupabaseClient) {
     searchSmallRobloxGames({
       keywords: pickKeywords(),
       maxVisits: maxVisits(),
-      deadline: Date.now() + 25_000,
+      pagesPerKeyword: PAGES_PER_KEYWORD,
+      deadline: Date.now() + searchMs,
     }),
     supabase.from("games").select("roblox_url"),
     supabase.from("roblox_stats").select("place_id"),
@@ -86,6 +102,7 @@ export async function importSmallRobloxGames(supabase: SupabaseClient) {
   const errors: { game: string; error: string }[] = [];
   const tagIds = new Map<string, number | null>();
   let imported = 0;
+  const newGameIds: string[] = [];
 
   for (const game of toAdd) {
     const { data: row, error } = await supabase
@@ -104,6 +121,7 @@ export async function importSmallRobloxGames(supabase: SupabaseClient) {
       continue;
     }
     imported++;
+    newGameIds.push(row.id);
 
     // Save the IDs now so the sync doesn't need to look them up.
     await supabase
@@ -122,6 +140,7 @@ export async function importSmallRobloxGames(supabase: SupabaseClient) {
 
   return {
     imported,
+    newGameIds,
     searched: found.searched,
     smallGamesFound: found.games.length,
     searchErrors: found.errors,

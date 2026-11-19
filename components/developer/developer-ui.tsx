@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import {
   disconnectRoblox,
+  importMoreGames,
   reviewSubmission,
   submitGame,
   verifyGame,
@@ -364,5 +365,53 @@ export function ReviewButtons({ gameId }: { gameId: string }) {
       </button>
       {error && <span role="alert" className="text-xs text-red-300">{error}</span>}
     </span>
+  );
+}
+
+// Admins: fill the site with more small Roblox games now.
+export function ImportGamesButton() {
+  const router = useRouter();
+  const [pending, start] = useTransition();
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const run = () =>
+    start(async () => {
+      setMessage(null);
+      const res = await importMoreGames();
+      if (!res.ok) return setMessage({ ok: false, text: res.error });
+      const { imported, found, searched, note } = res.data;
+      setMessage({
+        ok: true,
+        text:
+          note ??
+          (imported > 0
+            ? `Added ${imported} new game${imported === 1 ? "" : "s"}! (Searched: ${searched.join(", ")})`
+            : `No new games this time (found ${found} small games, all already here). Try again for different keywords.`),
+      });
+      router.refresh();
+    });
+
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        onClick={run}
+        disabled={pending}
+        className={YELLOW_BUTTON}
+      >
+        {pending ? "Searching Roblox… (up to a minute)" : "Import more games now"}
+      </button>
+      {message && (
+        <p
+          role={message.ok ? "status" : "alert"}
+          className={cn(
+            "rounded-[16px] px-3 py-2 text-[13px] font-semibold",
+            message.ok ? "border border-[#4d62db]/85 bg-[#4d62db]/20" : "bg-red-950/70 text-red-100",
+          )}
+        >
+          {message.text}
+        </p>
+      )}
+    </div>
   );
 }

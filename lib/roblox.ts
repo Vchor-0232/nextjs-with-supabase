@@ -274,7 +274,7 @@ export async function searchSmallRobloxGames({
   for (const keyword of keywords) {
     if (Date.now() > deadline) break;
     let pageToken = "";
-    for (let page = 0; page < pagesPerKeyword; page++) {
+    for (let page = 0; page < pagesPerKeyword && Date.now() < deadline; page++) {
       const url =
         `https://apis.roblox.com/search-api/omni-search?searchQuery=${encodeURIComponent(keyword)}` +
         `&sessionId=${sessionId}&pageType=all` +
@@ -285,12 +285,14 @@ export async function searchSmallRobloxGames({
       } | null = null;
       // Search is rate limited. Wait and retry a couple of times, then
       // move on with whatever we've found so far.
-      for (let attempt = 0; attempt < 3 && !data && Date.now() < deadline; attempt++) {
+      // A short wait and one retry, then move on to the next keyword rather
+      // than spend the run waiting on one.
+      for (let attempt = 0; attempt < 2 && !data && Date.now() < deadline; attempt++) {
         try {
           data = await getJson(url);
         } catch (e) {
           errors.push(`${keyword}: ${e instanceof Error ? e.message : String(e)}`);
-          await sleep(5000);
+          if (attempt === 0) await sleep(2500);
         }
       }
       if (!data) break;

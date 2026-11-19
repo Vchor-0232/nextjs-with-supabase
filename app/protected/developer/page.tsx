@@ -7,6 +7,7 @@ import {
   ConnectedBadge,
   ConnectRoblox,
   DisconnectButton,
+  ImportGamesButton,
   ReviewButtons,
   SectionHeading,
 } from "@/components/developer/developer-ui";
@@ -17,6 +18,9 @@ import { cn } from "@/lib/utils";
 // Developers add their own Roblox games here. First they connect their
 // Roblox account (so we know which games are theirs), then submit a game;
 // it shows on Gamesprout once an admin approves it.
+
+// The admin "Import more games now" button can search for up to a minute.
+export const maxDuration = 60;
 
 const ERRORS: Record<string, string> = {
   cancelled: "Roblox sign-in was cancelled.",
@@ -82,13 +86,16 @@ async function Developer({
 
   const link = linkRes.data;
   const isAdmin = Boolean(profileRes.data?.is_admin);
-  const queueRes = isAdmin
-    ? await supabase
-        .from("game_submissions")
-        .select("game_id, status, submitted_at, contact_email, games(title)")
-        .eq("status", "pending")
-        .order("submitted_at", { ascending: true })
-    : null;
+  const [queueRes, libraryRes] = isAdmin
+    ? await Promise.all([
+        supabase
+          .from("game_submissions")
+          .select("game_id, status, submitted_at, contact_email, games(title)")
+          .eq("status", "pending")
+          .order("submitted_at", { ascending: true }),
+        supabase.from("games").select("id", { count: "exact", head: true }).eq("is_published", true),
+      ])
+    : [null, null];
   const mine = (mineRes.data ?? []) as unknown as Submission[];
   const queue = (queueRes?.data ?? []) as unknown as Submission[];
 
@@ -144,6 +151,20 @@ async function Developer({
             <DisconnectButton />
           </div>
         </>
+      )}
+
+      {isAdmin && (
+        <section className="mt-8 flex flex-col gap-2">
+          <SectionHeading title="Game library" right="Admins only" />
+          <div className="flex flex-col gap-3 rounded-[16px] border border-white/10 bg-white/[0.07] p-3.5">
+            <p className="text-[13px] font-semibold text-white/70">
+              <span className="text-lg font-black text-white">{libraryRes?.count ?? "—"}</span> games
+              on Gamesprout. The daily update adds more each morning; this searches Roblox for small
+              games right now.
+            </p>
+            <ImportGamesButton />
+          </div>
+        </section>
       )}
 
       {isAdmin && (
